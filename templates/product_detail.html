@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.title }} - {{ shop_name }}{% endblock %}
+
+{% block content %}
+{% set p = product %}
+<div class="detail-grid">
+  <div class="product-gallery-wrap">
+    {% include '_slider.html' %}
+    <div class="slider-thumbnails">
+      <div class="slider-thumb-item active" onclick="var s = this.closest('.product-gallery-wrap').querySelector('.slider'); if(s) { s.dispatchEvent(new CustomEvent('jump', {detail:0})); }">
+        <img src="{{ url_for('static', filename=p.image_1) }}" alt="Thumb 1">
+      </div>
+      {% if p.image_2 %}
+      <div class="slider-thumb-item" onclick="var s = this.closest('.product-gallery-wrap').querySelector('.slider'); if(s) { s.dispatchEvent(new CustomEvent('jump', {detail:1})); }">
+        <img src="{{ url_for('static', filename=p.image_2) }}" alt="Thumb 2">
+      </div>
+      {% endif %}
+      {% if p.image_3 %}
+      <div class="slider-thumb-item" onclick="var s = this.closest('.product-gallery-wrap').querySelector('.slider'); if(s) { s.dispatchEvent(new CustomEvent('jump', {detail:2})); }">
+        <img src="{{ url_for('static', filename=p.image_3) }}" alt="Thumb 3">
+      </div>
+      {% endif %}
+      {% if p.video_url %}
+      <div class="slider-thumb-item video-thumb" onclick="var s = this.closest('.product-gallery-wrap').querySelector('.slider'); if(s) { var idx = {{ (1 if p.image_2 else 0) + (1 if p.image_3 else 0) + 1 }}; s.dispatchEvent(new CustomEvent('jump', {detail:idx})); }">
+        <span>▶ Video</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    <div style="font-size:13px; font-weight:700; color:var(--gray); margin-bottom:6px;">
+      PRODUCT ID: #{{ p.id }} &middot; SKU: {{ p.sku }}
+    </div>
+    <h1 style="font-size:26px; font-weight:800; color:var(--navy); margin:0 0 12px 0;">{{ p.title }}</h1>
+
+    <div class="card-price-row" style="margin-bottom: 14px;">
+      <span class="card-price" style="font-size:32px;">৳{{ '%.0f'|format(p.price) }}</span>
+      {% if p.old_price and p.old_price > p.price %}
+      <span class="card-old-price" style="font-size:20px;">৳{{ '%.0f'|format(p.old_price) }}</span>
+      {% set pct = ((p.old_price - p.price) / p.old_price * 100)|round|int %}
+      <span class="discount-flag" style="position:static; display:inline-block;">SAVE {{ pct }}%</span>
+      {% endif %}
+      {% if p.is_free_delivery %}
+      <span class="free-delivery-pill bkash-pill">
+        <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" class="pill-bkash-img">
+        <span>বিকাশে ফ্রি ডেলিভারি</span>
+      </span>
+      {% endif %}
+    </div>
+
+    {% if p.is_free_delivery %}
+    <div class="bkash-incentive-box">
+      <div class="bkash-incentive-header">
+        <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" class="bkash-box-logo">
+        <div class="bkash-box-title">🔥 স্পেশাল অফার: বিকাশ সেন্ড মানিতে ডেলিভারি চার্জ সম্পূর্ণ ফ্রি!</div>
+        <span class="bkash-save-badge">সেভ করুন ৳৭০</span>
+      </div>
+      <p class="bkash-box-desc">
+        অর্ডারে বিকাশ <strong>Send Money</strong> পেমেন্ট বেছে নিলে ডেলিভারি চার্জ <strong>৳০ (সম্পূর্ণ ফ্রি)</strong>! ক্যাশ অন ডেলিভারি নিলে ৭০ টাকা ডেলিভারি চার্জ প্রযোজ্য। এখনই bKash বেছে নিয়ে ৭০ টাকা বাঁচান!
+      </p>
+    </div>
+    {% endif %}
+
+    {% if avg %}
+    <div class="card-rating" style="margin-bottom: 16px;">
+      <span class="stars-gold" style="font-size:18px;">{{ '★' * (avg|round|int) }}{{ '☆' * (5 - (avg|round|int)) }}</span>
+      <span style="font-weight:700; color:var(--navy);">{{ avg }} / 5.0</span>
+      <span class="muted">({{ feedbacks|length }} verified reviews)</span>
+    </div>
+    {% endif %}
+
+    <div style="background:var(--soft-gray); padding:16px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border);">
+      <div style="font-weight:700; color:var(--navy); margin-bottom:8px;">Available Shoe Sizes (BD Standard):</div>
+      <div class="card-sizes-pills">
+        {% for s in sizes %}
+        <span class="size-mini-pill" style="font-size:13px; padding:4px 12px;">Size {{ s }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if p.description %}
+    <div class="product-description">
+      {{ p.description }}
+    </div>
+    {% endif %}
+
+    <button class="btn-order-now detail-order-btn" data-open-order>
+      <span class="cart-icon">🛒</span>
+      <span class="btn-text-col">
+        <span class="btn-bn">অর্ডার করতে এখানে ক্লিক করুন</span>
+        <span class="btn-en">Order Now</span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Customer Reviews Section -->
+<div class="reviews-card">
+  <h2 class="section-title" style="margin-bottom:18px;">⭐️ Verified Customer Reviews</h2>
+  {% for f in feedbacks %}
+  <div style="border-bottom:1px solid var(--border); padding:14px 0;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+      <b style="color:var(--navy); font-size:16px;">{{ f.customer_name }}</b>
+      <span class="muted" style="font-size:13px;">{{ f.created_at.strftime('%d %b %Y') }}</span>
+    </div>
+    <div class="stars-gold" style="margin-bottom:6px;">{{ '★' * f.rating }}{{ '☆' * (5 - f.rating) }}</div>
+    <div style="color:#334155;">{{ f.comment }}</div>
+  </div>
+  {% else %}
+  <p class="muted" style="margin:0;">No customer reviews yet. Be the first to order and submit a review!</p>
+  {% endfor %}
+</div>
+
+<!-- Direct Order Modal -->
+<div class="modal {{ 'open' if open_modal else '' }}" id="orderModal">
+  <div class="box modal-order-box">
+    <div class="modal-order-header">
+      <div class="modal-title-wrap">
+        <span class="modal-cart-icon">🛒</span>
+        <h2>Place Your Order</h2>
+      </div>
+      <button type="button" class="modal-close-btn" data-close-order>&times;</button>
+    </div>
+
+    <form method="post" action="{{ url_for('main.create_order') }}">
+      <input type="hidden" name="website" value=""> <!-- Honeypot -->
+      <input type="hidden" name="product_id" value="{{ p.id }}">
+
+      <!-- Selected Product Card -->
+      <div class="selected-product-card">
+        <div class="selected-product-info">
+          <div class="selected-product-badge">
+            <span class="badge-tag">✨ SELECTED PRODUCT</span>
+            <span class="badge-sku">SKU: {{ p.sku }}</span>
+          </div>
+          <div class="selected-product-title">{{ p.title }}</div>
+          <div class="selected-product-price-row">
+            <span class="price-label">Unit Price:</span>
+            <span class="price-value">৳<span id="unitPrice">{{ '%.0f'|format(p.price) }}</span></span>
+          </div>
+        </div>
+        <div class="selected-product-thumb">
+          <img src="{{ url_for('static', filename=p.image_1) }}" alt="{{ p.title }}">
+        </div>
+      </div>
+
+      <!-- Size Selection -->
+      <div class="form-group-wrap">
+        <label class="sweet-label">
+          <span>Choose Shoe Size (Bangladeshi Standard)</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="sizes-radio-group">
+          {% for s in sizes %}
+          <label>
+            <input type="radio" name="shoe_size" value="{{ s }}" {{ 'checked' if (form and form.shoe_size == s) or loop.first }} required>
+            <span>Size {{ s }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="quantity">Quantity <span class="required-star">*</span></label>
+          <input type="number" id="quantity" name="quantity" min="1" max="10" value="{{ form.quantity if form else 1 }}" required onchange="updateCalc()">
+        </div>
+        <div>
+          <label for="customer_name">Your Full Name <span class="required-star">*</span></label>
+          <input type="text" id="customer_name" name="customer_name" value="{{ form.customer_name if form else '' }}" required placeholder="e.g. Nusrat Jahan">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="mobile_number">Mobile Number <span class="required-star">*</span></label>
+          <input type="tel" id="mobile_number" name="mobile_number" value="{{ form.mobile_number if form else '' }}" pattern="01[3-9][0-9]{8}" required placeholder="01XXXXXXXXX">
+        </div>
+        <div>
+          <label for="whatsapp_number">WhatsApp Number (Optional)</label>
+          <input type="tel" id="whatsapp_number" name="whatsapp_number" value="{{ form.whatsapp_number if form else '' }}" placeholder="01XXXXXXXXX">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="division">Division <span class="required-star">*</span></label>
+          <select id="division" name="division" required onchange="updateCalc()">
+            {% for d in divisions %}
+            <option value="{{ d }}" {{ 'selected' if (form and form.division == d) or d == 'Dhaka' }}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="district">District / City</label>
+          <input type="text" id="district" name="district" value="{{ form.district if form else '' }}" placeholder="e.g. Dhaka / Gazipur">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="village_town">Village / Area / Town <span class="required-star">*</span></label>
+          <input type="text" id="village_town" name="village_town" value="{{ form.village_town if form else '' }}" required placeholder="e.g. Dhanmondi / Mirpur">
+        </div>
+        <div>
+          <label for="road_house">Road No / House No <span class="required-star">*</span></label>
+          <input type="text" id="road_house" name="road_house" value="{{ form.road_house if form else '' }}" required placeholder="e.g. House 12, Road 4">
+        </div>
+      </div>
+
+      <div>
+        <label for="notes">Order Notes (Max 200 characters) <span class="muted">(<span id="notesCount">0</span>/200)</span></label>
+        <textarea id="notes" name="notes" maxlength="200" rows="2" placeholder="Any special delivery timing or instructions..." oninput="document.getElementById('notesCount').innerText = this.value.length">{{ form.notes if form else '' }}</textarea>
+      </div>
+
+      <!-- Payment Method Selection -->
+      <div class="form-group-wrap" style="margin-top:16px;">
+        <label class="sweet-label">
+          <span>Payment Method (মূল্য পরিশোধের মাধ্যম)</span>
+          <span class="required-star">*</span>
+        </label>
+        
+        <div class="payment-method-selector">
+          <!-- Option 1: bKash Send Money (Recommended) -->
+          <label class="payment-radio-card bkash-card selected">
+            <input type="radio" name="payment_method" value="bkash" checked onchange="updateCalc()">
+            <div class="card-radio-circle"></div>
+            <div class="card-body-text">
+              <div class="card-title-row">
+                <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" class="bkash-card-logo">
+                <span class="method-title">bKash Send Money</span>
+                {% if p.is_free_delivery %}
+                <span class="method-tag-free">🎉 FREE DELIVERY (Save ৳70)</span>
+                {% else %}
+                <span class="method-tag-fast">⚡ FAST CONFIRM</span>
+                {% endif %}
+              </div>
+              <div class="method-desc">
+                {% if p.is_free_delivery %}
+                বিকাশ পার্সোনাল নাম্বারে সেন্ড মানি করুন — <strong>ডেলিভারি চার্জ সম্পূর্ণ ফ্রি (৳০)!</strong>
+                {% else %}
+                বিকাশ পার্সোনাল নাম্বারে সেন্ড মানি করে দ্রুত অর্ডার নিশ্চিত করুন।
+                {% endif %}
+              </div>
+            </div>
+          </label>
+
+          <!-- Option 2: Cash on Delivery -->
+          <label class="payment-radio-card cod-card">
+            <input type="radio" name="payment_method" value="cod" onchange="updateCalc()">
+            <div class="card-radio-circle"></div>
+            <div class="card-body-text">
+              <div class="card-title-row">
+                <span class="cod-emoji">💵</span>
+                <span class="method-title">Cash on Delivery (ক্যাশ অন ডেলিভারি)</span>
+                <span class="method-tag-cod">+৳70 Delivery Charge</span>
+              </div>
+              <div class="method-desc">
+                পণ্য ডেলিভারি পাওয়ার সময় মূল্য পরিশোধ। 
+                <strong style="color:#b91c1c;">(ক্যাশ অন ডেলিভারিতে কোনো ফ্রি ডেলিভারি প্রযোজ্য নয়)</strong>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Live Calculation Summary Box -->
+      <div class="order-summary-box">
+        <div class="summary-row">
+          <span>Product Total (<span id="calcQty">1</span> pair):</span>
+          <strong>৳<span id="calcSubtotal">{{ '%.0f'|format(p.price) }}</span></strong>
+        </div>
+        <div class="summary-row">
+          <span>Delivery Charge (<span id="calcDivLabel">Inside Dhaka</span>):</span>
+          <strong id="calcDeliveryWrap">৳<span id="calcDelivery">{{ charge_in }}</span> <span id="calcDeliveryBadge"></span></strong>
+        </div>
+        <div class="summary-total-row">
+          <span>Total Payable Amount:</span>
+          <span class="total-price-tag">৳<span id="calcGrandTotal">{{ '%.0f'|format(p.price + charge_in) }}</span></span>
+        </div>
+      </div>
+
+      <div class="modal-form-actions">
+        <button class="btn-order-now submit-order-btn" type="submit">
+          <span>🔒 Confirm Order & Get Tracking Link</span>
+        </button>
+        <button class="btn cancel-btn" type="button" data-close-order>Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const unitPrice = {{ p.price }};
+const chargeIn = {{ charge_in }};
+const chargeOut = {{ charge_out }};
+const isFreeDelivery = {{ 1 if p.is_free_delivery else 0 }};
+
+function updateCalc() {
+  const qtyInput = document.getElementById('quantity');
+  let qty = parseInt(qtyInput.value) || 1;
+  if (qty < 1) qty = 1;
+  
+  const divSelect = document.getElementById('division');
+  const div = divSelect.value;
+
+  const methodInput = document.querySelector('input[name="payment_method"]:checked');
+  const method = methodInput ? methodInput.value : 'bkash';
+
+  // Toggle active styling on payment cards
+  document.querySelectorAll('.payment-radio-card').forEach(card => {
+    const input = card.querySelector('input');
+    if (input && input.checked) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+
+  const baseDelivery = (div === 'Dhaka') ? chargeIn : chargeOut;
+  let delivery = 0;
+  let deliveryLabel = '';
+  let badgeHtml = '';
+
+  if (method === 'bkash') {
+    if (isFreeDelivery) {
+      delivery = 0;
+      deliveryLabel = 'bKash Send Money Promo';
+      badgeHtml = '<span class="free-delivery-badge-sm bkash-badge">bKash FREE</span>';
+      document.getElementById('calcDeliveryWrap').style.color = '#059669';
+    } else {
+      delivery = baseDelivery;
+      deliveryLabel = (div === 'Dhaka') ? 'Inside Dhaka' : 'Outside Dhaka';
+      badgeHtml = '';
+      document.getElementById('calcDeliveryWrap').style.color = 'inherit';
+    }
+  } else {
+    // Cash on Delivery: free delivery NEVER applies!
+    delivery = baseDelivery;
+    deliveryLabel = (div === 'Dhaka') ? 'COD (Inside Dhaka)' : 'COD (Outside Dhaka)';
+    badgeHtml = '<span class="cod-badge-sm">COD ৳' + baseDelivery + '</span>';
+    document.getElementById('calcDeliveryWrap').style.color = 'inherit';
+  }
+
+  const subtotal = unitPrice * qty;
+  const grandTotal = subtotal + delivery;
+
+  document.getElementById('calcQty').innerText = qty;
+  document.getElementById('calcSubtotal').innerText = Math.round(subtotal);
+  document.getElementById('calcDivLabel').innerText = deliveryLabel;
+  document.getElementById('calcDelivery').innerText = delivery;
+  document.getElementById('calcDeliveryBadge').innerHTML = badgeHtml;
+  document.getElementById('calcGrandTotal').innerText = Math.round(grandTotal);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('orderModal');
+  const openBtns = document.querySelectorAll('[data-open-order]');
+  const closeBtns = document.querySelectorAll('[data-close-order]');
+
+  openBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('open')));
+  closeBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.remove('open')));
+  
+  updateCalc();
+});
+</script>
+{% endblock %}

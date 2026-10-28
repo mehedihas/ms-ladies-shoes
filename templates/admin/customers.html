@@ -1,0 +1,616 @@
+{% extends 'base.html' %}
+{% block title %}Customer Master & Purchase Analytics - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="smart-dashboard-hero" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #431407 100%);">
+  <div>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+      <h1>👥 Customer Master &amp; Purchase Analytics</h1>
+      <span class="smart-live-badge" style="background:rgba(234, 88, 12, 0.25); border-color:#EA580C; color:#FFEDD5;">
+        <span class="smart-live-dot" style="background:#EA580C;"></span>
+        VIP Tier Tracking Active
+      </span>
+    </div>
+    <div style="font-size:14px; opacity:0.88; max-width:850px;">
+      Complete buyer directory: Customer purchase frequency, valuable VIP retention scoring, lifetime spend, last purchase date &amp; automated mass messaging.
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <button type="button" onclick="openMassModal()" class="btn orange" style="padding:10px 18px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+      🚀 Launch Mass Message / Broadcast
+    </button>
+    <a href="{{ url_for('main.admin_messenger', channel='sms') }}" class="btn sm navy" style="text-decoration:none; padding:10px 16px; font-size:14px; background:linear-gradient(135deg, #0084FF 0%, #15803D 50%, #C2410C 100%); color:#FFFFFF;">
+      📱 SMS &amp; Omnichannel Hub
+    </a>
+    <a href="{{ url_for('main.admin_dashboard') }}" class="btn sm gray" style="text-decoration:none; padding:10px 16px; font-size:14px; color:#FFFFFF; background:rgba(255,255,255,0.15);">
+      📊 Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- 5 High-Level Customer Metrics KPI Cards -->
+<div class="smart-lifecycle-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top:20px;">
+  <!-- 1. Total Customers -->
+  <a href="{{ url_for('main.admin_customers', tier='all') }}" class="smart-lifecycle-card {{ 'active' if tier == 'all' or not tier else '' }}" style="border-left: 4px solid #3B82F6;">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">👥</span>
+      <span class="smart-card-count" style="color:#2563EB;">{{ metrics.total_customers }}</span>
+    </div>
+    <div class="smart-card-title">Total Customers</div>
+    <div class="smart-card-sub">Unique buyers across all orders</div>
+  </a>
+
+  <!-- 2. VIP / Elite Customers -->
+  <a href="{{ url_for('main.admin_customers', tier='vip') }}" class="smart-lifecycle-card {{ 'active' if tier == 'vip' else '' }}" style="border-left: 4px solid #8B5CF6; background:linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 100%);">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">💎</span>
+      <span class="smart-card-count" style="color:#7C3AED;">{{ metrics.vip_customers }}</span>
+    </div>
+    <div class="smart-card-title">VIP / Elite Buyers</div>
+    <div class="smart-card-sub">3+ purchases or ৳5,000+ total spent</div>
+  </a>
+
+  <!-- 3. Repeat Buyers -->
+  <a href="{{ url_for('main.admin_customers', tier='repeat') }}" class="smart-lifecycle-card {{ 'active' if tier == 'repeat' else '' }}" style="border-left: 4px solid #10B981; background:linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%);">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">⭐</span>
+      <span class="smart-card-count" style="color:#059669;">{{ metrics.repeat_customers }}</span>
+    </div>
+    <div class="smart-card-title">Loyal / Repeat Buyers</div>
+    <div class="smart-card-sub">2 purchases (Retention candidates)</div>
+  </a>
+
+  <!-- 4. First-Time Buyers -->
+  <a href="{{ url_for('main.admin_customers', tier='single') }}" class="smart-lifecycle-card {{ 'active' if tier == 'single' else '' }}" style="border-left: 4px solid #F59E0B; background:linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%);">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">🌱</span>
+      <span class="smart-card-count" style="color:#D97706;">{{ metrics.single_customers }}</span>
+    </div>
+    <div class="smart-card-title">New / First-Time</div>
+    <div class="smart-card-sub">1 purchase (Target for 2nd order discount)</div>
+  </a>
+
+  <!-- 5. Lifetime Revenue & Avg -->
+  <div class="smart-lifecycle-card" style="border-left: 4px solid #EA580C; background:linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%); cursor:default;">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">💰</span>
+      <span class="smart-card-count" style="color:#C2410C; font-size:24px;">৳{{ '%.0f'|format(metrics.total_spent_all) }}</span>
+    </div>
+    <div class="smart-card-title">Customer Lifetime Value</div>
+    <div class="smart-card-sub">Avg ৳{{ '%.0f'|format(metrics.avg_spend) }} / ~{{ metrics.avg_orders }} orders per buyer</div>
+  </div>
+</div>
+
+<!-- Search, Filter & Bulk Actions Bar -->
+<div class="panel" style="margin-top:20px; padding:18px 20px;">
+  <form method="get" action="{{ url_for('main.admin_customers') }}" style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; flex:1; min-width:300px;">
+      <div style="position:relative; flex:1; min-width:240px;">
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="🔍 Search by name, mobile (01XXXXXXXXX), email, district..." style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid #CBD5E1; font-size:13.5px;">
+      </div>
+      <select name="tier" style="padding:10px 12px; border-radius:8px; border:1px solid #CBD5E1; font-size:13.5px; background:#FFFFFF;">
+        <option value="all" {{ 'selected' if tier == 'all' or not tier }}>All Customers ({{ metrics.total_customers }})</option>
+        <option value="vip" {{ 'selected' if tier == 'vip' }}>💎 VIP / Elite Only ({{ metrics.vip_customers }})</option>
+        <option value="repeat" {{ 'selected' if tier == 'repeat' }}>⭐ Repeat Buyers Only ({{ metrics.repeat_customers }})</option>
+        <option value="single" {{ 'selected' if tier == 'single' }}>🌱 New Buyers Only ({{ metrics.single_customers }})</option>
+      </select>
+      <select name="sort" style="padding:10px 12px; border-radius:8px; border:1px solid #CBD5E1; font-size:13.5px; background:#FFFFFF;">
+        <option value="orders_desc" {{ 'selected' if sort == 'orders_desc' }}>Sort: Most Orders (Valuable First)</option>
+        <option value="spent_desc" {{ 'selected' if sort == 'spent_desc' }}>Sort: Highest Spend (৳ BDT)</option>
+        <option value="recent_desc" {{ 'selected' if sort == 'recent_desc' }}>Sort: Most Recent Purchase</option>
+        <option value="name_asc" {{ 'selected' if sort == 'name_asc' }}>Sort: Customer Name (A-Z)</option>
+      </select>
+      <button type="submit" class="btn sm navy" style="padding:10px 18px;">Apply Filter</button>
+      {% if q or tier != 'all' or sort != 'orders_desc' %}
+      <a href="{{ url_for('main.admin_customers') }}" class="btn sm gray" style="text-decoration:none; padding:10px 14px;">Reset</a>
+      {% endif %}
+    </div>
+
+    <!-- Quick action button to trigger mass message for filtered set -->
+    <div>
+      <button type="button" onclick="openMassModal()" class="btn sm orange" style="padding:10px 16px; font-weight:700;">
+        ✉️ Mass Message Filtered List ({{ customers|length }})
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Customer Master Table -->
+<div class="panel" style="margin-top:20px; padding:0; overflow:hidden;">
+  <div style="padding:16px 20px; background:#F8FAFC; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+      <h3 style="margin:0; font-size:16px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span>📋 Customer Master Records</span>
+        <span style="font-size:12px; font-weight:700; background:#E2E8F0; color:#334155; padding:2px 8px; border-radius:12px;">{{ customers|length }} Customers</span>
+      </h3>
+    </div>
+    <div style="font-size:12.5px; color:#64748B;">
+      💡 Tip: Click <strong>"📜 History"</strong> on any row to view their entire lifetime order history and shoe purchases.
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13.5px;">
+      <thead>
+        <tr style="background:#F1F5F9; border-bottom:2px solid #CBD5E1; color:#475569; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+          <th style="padding:12px 14px; width:36px; text-align:center;">
+            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="cursor:pointer;">
+          </th>
+          <th style="padding:12px 16px;">Customer Details</th>
+          <th style="padding:12px 16px;">Contact Info</th>
+          <th style="padding:12px 16px;">Location</th>
+          <th style="padding:12px 16px; text-align:center;">Buy History</th>
+          <th style="padding:12px 16px; text-align:right;">Total Spent</th>
+          <th style="padding:12px 16px;">Last Purchase Date</th>
+          <th style="padding:12px 16px; text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if not customers %}
+        <tr>
+          <td colspan="8" style="padding:48px 20px; text-align:center; color:#64748B;">
+            <div style="font-size:40px; margin-bottom:10px;">🔍</div>
+            <div style="font-size:16px; font-weight:700; color:#1E293B;">No customers matched your filter.</div>
+            <div style="font-size:13px; margin-top:4px;">Try searching with a different name, phone number, or reset filters.</div>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% for c in customers %}
+        <tr style="border-bottom:1px solid #E2E8F0; transition:background 0.15s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='transparent'">
+          <!-- Selection Checkbox -->
+          <td style="padding:14px; text-align:center;">
+            <input type="checkbox" class="cust-row-checkbox" value="{{ c.mobile_number }}" data-name="{{ c.customer_name }}" style="cursor:pointer;" onchange="updateSelectedCount()">
+          </td>
+
+          <!-- Customer Details -->
+          <td style="padding:14px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; flex-shrink:0;">
+                {{ (c.customer_name[:1] if c.customer_name else 'C')|upper }}
+              </div>
+              <div>
+                <div style="font-weight:700; color:#0F172A; font-size:14.5px;">
+                  {{ c.customer_name or 'Unknown Customer' }}
+                </div>
+                <div style="margin-top:3px;">
+                  {% if c.tier == 'vip' %}
+                  <span class="pill" style="background:#F3E8FF; color:#7E22CE; font-weight:800; font-size:11px; padding:2px 8px;">
+                    💎 VIP / Elite Buyer
+                  </span>
+                  {% elif c.tier == 'repeat' %}
+                  <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:800; font-size:11px; padding:2px 8px;">
+                    ⭐ Loyal Repeat Buyer
+                  </span>
+                  {% else %}
+                  <span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:700; font-size:11px; padding:2px 8px;">
+                    🌱 New Customer
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Contact Info -->
+          <td style="padding:14px 16px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <strong style="font-size:14px; font-family:monospace; color:#0F172A;">{{ c.mobile_number }}</strong>
+              <button type="button" onclick="copyToClipboard('{{ c.mobile_number }}')" title="Copy phone" style="background:none; border:none; cursor:pointer; font-size:12px; padding:0; color:#64748B;">📋</button>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:4px; font-size:12px;">
+              {% if c.whatsapp_number %}
+              <span style="color:#15803D; display:inline-flex; align-items:center; gap:3px; font-weight:600;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.97.57 3.805 1.554 5.352L2.094 22l4.757-1.428A10.007 10.007 0 0 0 12.031 22C17.568 22 22 17.505 22 12.031 22 6.495 17.568 2 12.031 2zm5.748 14.156c-.24.673-1.393 1.288-1.922 1.344-.504.053-1.127.078-3.414-.863-2.716-1.117-4.48-3.865-4.615-4.045-.135-.18-1.096-1.457-1.096-2.778 0-1.32.69-1.969.936-2.235.24-.265.527-.33.703-.33.176 0 .352.003.504.01.164.009.384-.062.6.457.224.536.764 1.86.83 1.996.067.135.11.293.02.473-.09.18-.135.293-.27.45-.135.158-.284.352-.405.473-.135.135-.277.283-.12.553.158.27 1.053 1.733 2.26 2.808 1.554 1.383 2.862 1.81 3.268 1.978.406.168.644.14.884-.135.24-.275 1.026-1.196 1.302-1.606.276-.41.553-.342.928-.204.375.137 2.38 1.123 2.787 1.326.406.204.676.305.776.474.1.17.1.984-.14 1.657z"/></svg>
+                WA Linked
+              </span>
+              {% endif %}
+              {% if c.email %}
+              <span style="color:#64748B;" title="{{ c.email }}">✉️ {{ c.email[:16] }}...</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Location -->
+          <td style="padding:14px 16px;">
+            <div style="font-weight:600; color:#1E293B;">{{ c.district or c.division or 'Dhaka' }}</div>
+            <div style="font-size:12px; color:#64748B; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ c.full_address }}">
+              {{ c.full_address or 'Standard address' }}
+            </div>
+          </td>
+
+          <!-- Buy History -->
+          <td style="padding:14px 16px; text-align:center;">
+            <div style="font-size:16px; font-weight:800; color:#0F172A;">
+              {{ c.total_orders }} <span style="font-size:12px; font-weight:500; color:#64748B;">orders</span>
+            </div>
+            <div style="font-size:11.5px; margin-top:2px;">
+              <span class="pill" style="background:#E0F2FE; color:#0369A1; font-weight:700; padding:1px 6px;">
+                {{ c.completed_orders }} Delivered
+              </span>
+            </div>
+          </td>
+
+          <!-- Total Spent -->
+          <td style="padding:14px 16px; text-align:right;">
+            <div style="font-size:16px; font-weight:800; color:#059669;">
+              ৳{{ '%.0f'|format(c.total_spent) }}
+            </div>
+            <div style="font-size:11px; color:#64748B; margin-top:2px;">
+              Lifetime Value
+            </div>
+          </td>
+
+          <!-- Last Purchase Date -->
+          <td style="padding:14px 16px;">
+            <div style="font-weight:700; color:#0F172A;">
+              {{ c.last_purchase_date[:10] if c.last_purchase_date else 'Recent' }}
+            </div>
+            <div style="font-size:12px; color:#64748B; margin-top:2px;">
+              {% if c.last_order_id %}
+              <a href="{{ url_for('main.admin_order', order_id=c.last_order_id) }}" style="color:#2563EB; text-decoration:none; font-weight:600;">
+                Order #{{ c.last_order_id }} ({{ c.last_order_status }})
+              </a>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td style="padding:14px 16px; text-align:center;">
+            <div style="display:inline-flex; gap:6px; align-items:center;">
+              <!-- Dynamic Modal Trigger -->
+              <button type="button" onclick="loadCustomerHistory('{{ c.mobile_number }}')" class="btn sm navy" style="padding:5px 10px; font-size:12px; text-decoration:none;">
+                📜 History
+              </button>
+
+              <!-- Direct WhatsApp link -->
+              <a href="https://wa.me/88{{ c.mobile_number }}?text=Hello%20{{ c.customer_name }},%20from%20{{ shop_name }}" target="_blank" class="btn sm ok" style="padding:5px 8px; font-size:12px; text-decoration:none;" title="Chat on WhatsApp">
+                💬
+              </a>
+
+              <!-- Airtel SMS Sender Autofill Link -->
+              <a href="{{ url_for('main.admin_messenger', channel='sms', phone=c.mobile_number) }}" class="btn sm orange" style="padding:5px 8px; font-size:12px; text-decoration:none;" title="Send Airtel SMS">
+                📱
+              </a>
+
+              <!-- Call Phone -->
+              <a href="tel:+88{{ c.mobile_number }}" class="btn sm gray" style="padding:5px 8px; font-size:12px; text-decoration:none;" title="Call Customer">
+                📞
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mass Send Message Modal Drawer -->
+<div id="massMessageModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:680px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); overflow:hidden; animation:fadeInScale 0.2s ease-out;">
+    
+    <!-- Modal Header -->
+    <div style="padding:20px 24px; background:linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color:#FFFFFF; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h3 style="margin:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+          <span>🚀 Automated Mass Message / Broadcast Hub</span>
+        </h3>
+        <p style="margin:4px 0 0 0; font-size:13px; opacity:0.8;">
+          Send personalized promotional, offer, or update messages to multiple customers simultaneously.
+        </p>
+      </div>
+      <button type="button" onclick="closeMassModal()" style="background:none; border:none; color:#FFFFFF; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+
+    <!-- Modal Form -->
+    <form method="post" action="{{ url_for('main.admin_customers_mass_message') }}" onsubmit="return confirmMassSend()" style="padding:24px;">
+      
+      <!-- Hidden inputs for dynamically checked checkboxes -->
+      <div id="hiddenMobilesContainer"></div>
+
+      <!-- Channel Selector -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:8px;">
+          1. Choose Broadcast Delivery Channel:
+        </label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid #FED7AA; border-radius:10px; background:#FFF7ED; cursor:pointer;">
+            <input type="radio" name="channel" value="sms" checked onchange="updateChannelInfo('sms')">
+            <div>
+              <div style="font-weight:700; color:#9A3412; font-size:13.5px;">📱 Android SMS Gateway</div>
+              <div style="font-size:11.5px; color:#C2410C;">
+                Operator: <strong>{{ operator }} SIM</strong> · {{ '✅ Connected' if sms_enabled else '⚠️ Gateway Off' }}
+              </div>
+            </div>
+          </label>
+
+          <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid #BBF7D0; border-radius:10px; background:#F0FDF4; cursor:pointer;">
+            <input type="radio" name="channel" value="whatsapp" onchange="updateChannelInfo('whatsapp')">
+            <div>
+              <div style="font-weight:700; color:#14532D; font-size:13.5px;">🟢 Meta WhatsApp Cloud API</div>
+              <div style="font-size:11.5px; color:#166534;">
+                Direct WhatsApp · {{ '✅ Cloud API Active' if wa_enabled else '⚠️ Off' }}
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Target Audience Selector -->
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:8px;">
+          2. Target Recipient Group:
+        </label>
+        <select name="target_tier" id="targetTierSelect" onchange="updateRecipientDisplay()" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #CBD5E1; font-size:14px; background:#FFFFFF;">
+          <option value="selected" id="optSelected">🎯 Only Checked Customers in Table (<span id="modalSelectedCount">0</span> selected)</option>
+          <option value="all">👥 All Customers in Database ({{ metrics.total_customers }} recipients)</option>
+          <option value="vip" selected>💎 VIP / Elite Valuable Customers Only ({{ metrics.vip_customers }} recipients)</option>
+          <option value="repeat">⭐ Repeat Buyers Only ({{ metrics.repeat_customers }} recipients)</option>
+          <option value="single">🌱 New / First-Time Buyers Only ({{ metrics.single_customers }} recipients)</option>
+        </select>
+      </div>
+
+      <!-- Quick Templates -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <label style="font-weight:700; font-size:13px; color:#0F172A;">
+            3. Message Content &amp; Fast Templates:
+          </label>
+          <span style="font-size:12px; color:#64748B;">Click a template to load:</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" onclick="loadTemplate('vip_discount')" class="btn sm gray" style="font-size:11.5px; padding:4px 8px;">🌟 VIP 10% Discount</button>
+          <button type="button" onclick="loadTemplate('new_collection')" class="btn sm gray" style="font-size:11.5px; padding:4px 8px;">👠 New Heels Collection</button>
+          <button type="button" onclick="loadTemplate('review_request')" class="btn sm gray" style="font-size:11.5px; padding:4px 8px;">⭐ Review &amp; Feedback</button>
+          <button type="button" onclick="loadTemplate('festive_offer')" class="btn sm gray" style="font-size:11.5px; padding:4px 8px;">🎁 Free Delivery Special</button>
+        </div>
+      </div>
+
+      <!-- Message Textarea -->
+      <div style="margin-bottom:10px;">
+        <textarea id="massMessageTextarea" name="message_template" rows="5" required oninput="calcChars()" placeholder="Write your broadcast message here... Available placeholders: {name}, {shop_name}, {last_product}, {total_orders}" style="width:100%; padding:12px; border-radius:8px; border:1px solid #CBD5E1; font-size:13.5px; line-height:1.5; box-sizing:border-box;"></textarea>
+      </div>
+
+      <!-- Helper Tags & Character Counter -->
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#64748B; margin-bottom:18px;">
+        <div>
+          Placeholders:
+          <code style="background:#F1F5F9; padding:2px 5px; border-radius:4px; cursor:pointer;" onclick="insertTag('{name}')">{name}</code>
+          <code style="background:#F1F5F9; padding:2px 5px; border-radius:4px; cursor:pointer;" onclick="insertTag('{shop_name}')">{shop_name}</code>
+          <code style="background:#F1F5F9; padding:2px 5px; border-radius:4px; cursor:pointer;" onclick="insertTag('{last_product}')">{last_product}</code>
+        </div>
+        <div id="charCounter" style="font-weight:700;">
+          0 chars (1 SMS)
+        </div>
+      </div>
+
+      <!-- Airtel SIM Safety Warning -->
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 12px; font-size:12px; color:#92400E; margin-bottom:20px; line-height:1.4;">
+        ⚠️ <strong>এয়ারটেল সিম গেটওয়ে সেফটি টিপ:</strong> ব্রডকাস্ট পাঠানোর সময় আমাদের ইঞ্জিন প্রতিটি মেসেজের মাঝে হালকা বিরতি বজায় রাখবে। একসাথে ৩০০+ নম্বরে স্প্যামিং না করে ৫০-১০০ জনের টার্গেটেড ব্যাচে পাঠানো নিরাপদ।
+      </div>
+
+      <!-- Modal Actions -->
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeMassModal()" class="btn sm gray" style="padding:10px 18px; font-size:14px;">Cancel</button>
+        <button type="submit" class="btn orange" style="padding:10px 22px; font-size:14px; font-weight:800;">
+          🚀 Dispatch Mass Broadcast Now
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Dynamic Customer Order History Modal (AJAX) -->
+<div id="historyModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:760px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); overflow:hidden;">
+    
+    <!-- Modal Header -->
+    <div style="padding:18px 24px; background:#0F172A; color:#FFFFFF; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h3 id="modalCustomerName" style="margin:0; font-size:18px; display:flex; align-items:center; gap:8px;">
+          Customer Buy History
+        </h3>
+        <p id="modalCustomerPhone" style="margin:4px 0 0 0; font-size:13px; opacity:0.8; font-family:monospace;"></p>
+      </div>
+      <button type="button" onclick="closeHistoryModal()" style="background:none; border:none; color:#FFFFFF; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+
+    <!-- Modal Body (Scrollable) -->
+    <div id="modalHistoryContent" style="padding:20px 24px; overflow-y:auto; flex:1;">
+      <div style="text-align:center; padding:40px 0; color:#64748B;">
+        <div style="font-size:32px;">⏳</div>
+        <div>Loading lifetime purchase records...</div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="padding:14px 24px; background:#F8FAFC; border-top:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
+      <div id="modalCustomerStats" style="font-size:13px; font-weight:700; color:#0F172A;"></div>
+      <button type="button" onclick="closeHistoryModal()" class="btn sm gray">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Checkbox Selection Logic ---
+function toggleSelectAll(master) {
+  const checkboxes = document.querySelectorAll('.cust-row-checkbox');
+  checkboxes.forEach(cb => cb.checked = master.checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checked = document.querySelectorAll('.cust-row-checkbox:checked');
+  const countSpan = document.getElementById('modalSelectedCount');
+  if (countSpan) countSpan.textContent = checked.length;
+}
+
+// --- Mass Message Modal Controls ---
+function openMassModal() {
+  updateSelectedCount();
+  const checked = document.querySelectorAll('.cust-row-checkbox:checked');
+  const targetSelect = document.getElementById('targetTierSelect');
+  if (checked.length > 0) {
+    targetSelect.value = 'selected';
+  } else if (targetSelect.value === 'selected') {
+    targetSelect.value = 'all';
+  }
+  
+  // Set default template if empty
+  const textarea = document.getElementById('massMessageTextarea');
+  if (!textarea.value.trim()) {
+    loadTemplate('vip_discount');
+  }
+  
+  document.getElementById('massMessageModal').style.display = 'flex';
+  calcChars();
+}
+
+function closeMassModal() {
+  document.getElementById('massMessageModal').style.display = 'none';
+}
+
+function confirmMassSend() {
+  const target = document.getElementById('targetTierSelect').value;
+  const checked = document.querySelectorAll('.cust-row-checkbox:checked');
+  
+  // If 'selected' option was picked, inject hidden inputs
+  const container = document.getElementById('hiddenMobilesContainer');
+  container.innerHTML = '';
+  if (target === 'selected') {
+    if (checked.length === 0) {
+      alert("Please select at least one customer from the table or pick a different audience group!");
+      return false;
+    }
+    checked.forEach(cb => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'selected_mobiles';
+      inp.value = cb.value;
+      container.appendChild(inp);
+    });
+  }
+
+  return confirm("Are you sure you want to dispatch this mass message to the selected customer audience?");
+}
+
+// --- Fast Templates ---
+const TEMPLATES = {
+  vip_discount: "Hello {name}, thank you for being one of our most valued customers at {shop_name}! As a token of appreciation, enjoy an exclusive 10% discount on your next pair. Reply here to pick your design!",
+  new_collection: "Hello {name}, brand new exclusive ladies party heels & comfortable flat collections have just arrived at {shop_name}! View the latest collection and order before stock runs out.",
+  review_request: "Hello {name}, thank you for your recent purchase from {shop_name}! We hope you love your shoes! How is the size and comfort? Reply here to let us know. Your review helps us improve!",
+  festive_offer: "Special limited-time offer from {shop_name}! Hello {name}, get free delivery on all ladies shoe orders this week. Reply now to book your favorite pair!"
+};
+
+function loadTemplate(key) {
+  const tpl = TEMPLATES[key];
+  if (tpl) {
+    document.getElementById('massMessageTextarea').value = tpl;
+    calcChars();
+  }
+}
+
+function insertTag(tag) {
+  const textarea = document.getElementById('massMessageTextarea');
+  const pos = textarea.selectionStart;
+  const val = textarea.value;
+  textarea.value = val.substring(0, pos) + tag + val.substring(textarea.selectionEnd);
+  textarea.focus();
+  calcChars();
+}
+
+function calcChars() {
+  const val = document.getElementById('massMessageTextarea').value;
+  const len = val.length;
+  const smsCount = Math.ceil(len / 160) || 1;
+  const el = document.getElementById('charCounter');
+  el.textContent = `${len} chars (${smsCount} SMS segment${smsCount > 1 ? 's' : ''})`;
+  if (len > 320) {
+    el.style.color = '#DC2626';
+  } else {
+    el.style.color = '#64748B';
+  }
+}
+
+// --- Customer History AJAX Loader ---
+function loadCustomerHistory(mobile) {
+  const modal = document.getElementById('historyModal');
+  const content = document.getElementById('modalHistoryContent');
+  modal.style.display = 'flex';
+  content.innerHTML = `
+    <div style="text-align:center; padding:40px 0; color:#64748B;">
+      <div style="font-size:32px;">⏳</div>
+      <div style="margin-top:8px;">Fetching complete purchase history for <strong>${mobile}</strong>...</div>
+    </div>
+  `;
+
+  fetch(`/admin/customer/${mobile}/history`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        content.innerHTML = `<div style="color:#DC2626; padding:20px;">Error: ${data.error}</div>`;
+        return;
+      }
+      const c = data.customer;
+      document.getElementById('modalCustomerName').innerHTML = `${c.customer_name} <span class="pill" style="font-size:11px; background:#FEF3C7; color:#92400E; margin-left:8px;">${c.tier_label}</span>`;
+      document.getElementById('modalCustomerPhone').textContent = `📞 ${c.mobile_number} · 📍 ${c.district || c.division || 'Dhaka'} (${c.full_address || 'Address'})`;
+      document.getElementById('modalCustomerStats').textContent = `Total Orders: ${c.total_orders} | Delivered: ${c.completed_orders} | Total Spent: ৳${Math.round(c.total_spent)}`;
+
+      let ordersHtml = `<div style="display:flex; flex-direction:column; gap:12px;">`;
+      c.orders.forEach(o => {
+        ordersHtml += `
+          <div style="border:1px solid #E2E8F0; border-radius:10px; padding:12px 16px; background:#F8FAFC; display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              ${o.product_image ? `<img src="/static/${o.product_image}" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid #CBD5E1;">` : `<div style="width:48px; height:48px; background:#E2E8F0; border-radius:8px; display:flex; align-items:center; justify-content:center;">👠</div>`}
+              <div>
+                <div style="font-weight:700; color:#0F172A; font-size:14px;">
+                  ${o.product_title}
+                </div>
+                <div style="font-size:12px; color:#64748B; margin-top:2px;">
+                  Size: <strong>${o.shoe_size}</strong> · Qty: <strong>${o.quantity}</strong> · Trk: <code>${o.tracking_hash}</code>
+                </div>
+                <div style="font-size:11.5px; color:#94A3B8; margin-top:2px;">
+                  Placed on: ${o.created_at}
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              <div style="font-size:15px; font-weight:800; color:#059669;">
+                ৳${Math.round(o.total_amount)}
+              </div>
+              <div style="margin-top:3px;">
+                <span class="pill" style="font-size:11px; font-weight:700; background:#E2E8F0; color:#1E293B;">
+                  ${o.status}
+                </span>
+              </div>
+              <div style="margin-top:6px;">
+                <a href="${o.admin_order_url}" class="btn sm navy" style="padding:3px 8px; font-size:11px; text-decoration:none;">
+                  View Order #${o.id}
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      ordersHtml += `</div>`;
+      content.innerHTML = ordersHtml;
+    })
+    .catch(err => {
+      content.innerHTML = `<div style="color:#DC2626; padding:20px;">Network error loading customer history.</div>`;
+    });
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').style.display = 'none';
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert("Copied " + text + " to clipboard!");
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% block title %}Smart Tracking Operations Dashboard - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<!-- Executive Hero Bar -->
+<div class="smart-dashboard-hero">
+  <div>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+      <h1>⚡ Smart Tracking Operations Dashboard</h1>
+      <span class="smart-live-badge">
+        <span class="smart-live-dot"></span>
+        Live Tracking Active
+      </span>
+    </div>
+    <div style="font-size:14px; opacity:0.85;">
+      Full order lifecycle tracking: Payment verification, Packaging, Gate-Out Handover, Courier Delivery, Feedback & Closures.
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a href="{{ url_for('main.admin_product_form') }}" class="btn-save" style="text-decoration:none; padding:10px 18px; font-size:14px; background:var(--admin-success);">
+      ✨ + Add Product
+    </a>
+    <a href="{{ url_for('main.admin_products') }}" class="btn navy" style="text-decoration:none; padding:10px 18px; font-size:14px;">
+      📦 Manage Products
+    </a>
+    <a href="{{ url_for('main.admin_feedbacks') }}" class="btn sm gray" style="text-decoration:none; padding:10px 16px; font-size:14px; color:#FFFFFF; background:rgba(255,255,255,0.15);">
+      ⭐ Reviews ({{ m.feedbacks if m.feedbacks else 0 }})
+    </a>
+    <a href="{{ url_for('main.admin_customers') }}" class="btn sm orange" style="text-decoration:none; padding:10px 18px; font-size:14px; background:#EA580C; color:#FFFFFF; font-weight:700;">
+      👥 Customer Master ({{ customer_metrics.total_customers if customer_metrics else 0 }})
+    </a>
+    <a href="{{ url_for('main.admin_messenger') }}" class="btn sm navy" style="text-decoration:none; padding:10px 16px; font-size:14px; background:linear-gradient(135deg, #0084FF 0%, #15803D 50%, #C2410C 100%); color:#FFFFFF;">
+      💬 Omnichannel &amp; 📱 SMS
+    </a>
+    <a href="{{ url_for('main.admin_export', from_date=from_date, to_date=to_date, queue=queue, q=q, all_time=1 if all_time else 0) }}" class="btn orange" style="text-decoration:none; padding:10px 18px; font-size:14px;">
+      📄 Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- 6 Smart Operational Lifecycle Funnel Cards -->
+<div class="smart-lifecycle-grid">
+  <!-- 1. Payment Verification Pending -->
+  <a href="{{ url_for('main.admin_dashboard', queue='payment_pending', all_time=1) }}" class="smart-lifecycle-card card-payment-pending {{ 'active' if queue == 'payment_pending' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">⚡</span>
+      <span class="smart-card-count">{{ todo.payment_pending }}</span>
+    </div>
+    <div class="smart-card-title">Payment Pending</div>
+    <div class="smart-card-sub">bKash TrxID submitted, waiting admin verification</div>
+  </a>
+
+  <!-- 2. Packaging Pending -->
+  <a href="{{ url_for('main.admin_dashboard', queue='packaging_pending', all_time=1) }}" class="smart-lifecycle-card card-packaging-pending {{ 'active' if queue == 'packaging_pending' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">📦</span>
+      <span class="smart-card-count">{{ todo.packaging_pending }}</span>
+    </div>
+    <div class="smart-card-title">Packaging Pending</div>
+    <div class="smart-card-sub">Confirmed & verified, ready to box & pack</div>
+  </a>
+
+  <!-- 3. Gate Out Delivery Pending -->
+  <a href="{{ url_for('main.admin_dashboard', queue='gate_out_pending', all_time=1) }}" class="smart-lifecycle-card card-gate-out-pending {{ 'active' if queue == 'gate_out_pending' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">🚪</span>
+      <span class="smart-card-count">{{ todo.gate_out_pending }}</span>
+    </div>
+    <div class="smart-card-title">Gate Out Pending</div>
+    <div class="smart-card-sub">Packaged & boxed, awaiting courier rider pickup</div>
+  </a>
+
+  <!-- 4. Delivery Pending (In Transit) -->
+  <a href="{{ url_for('main.admin_dashboard', queue='delivery_pending', all_time=1) }}" class="smart-lifecycle-card card-delivery-pending {{ 'active' if queue == 'delivery_pending' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">🚚</span>
+      <span class="smart-card-count">{{ todo.delivery_pending }}</span>
+    </div>
+    <div class="smart-card-title">Delivery Pending</div>
+    <div class="smart-card-sub">Parcel with courier rider, in transit to customer</div>
+  </a>
+
+  <!-- 5. Customer Feedback Pending / Close Pending -->
+  <a href="{{ url_for('main.admin_dashboard', queue='feedback_pending', all_time=1) }}" class="smart-lifecycle-card card-feedback-pending {{ 'active' if queue == 'feedback_pending' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">💬</span>
+      <span class="smart-card-count">{{ todo.feedback_pending }}</span>
+    </div>
+    <div class="smart-card-title">Feedback Pending</div>
+    <div class="smart-card-sub">Delivered to customer, review / close pending</div>
+  </a>
+
+  <!-- 6. Completed Orders -->
+  <a href="{{ url_for('main.admin_dashboard', queue='completed', all_time=1) }}" class="smart-lifecycle-card card-completed {{ 'active' if queue == 'completed' else '' }}">
+    <div class="smart-card-top">
+      <span class="smart-card-icon">✅</span>
+      <span class="smart-card-count">{{ todo.completed }}</span>
+    </div>
+    <div class="smart-card-title">Completed Orders</div>
+    <div class="smart-card-sub">Delivered, verified and closed by admin</div>
+  </a>
+</div>
+
+<!-- Secondary Financial Overview Bar -->
+<div class="smart-sub-metrics">
+  <div class="sub-metric-item">
+    <span class="muted">Total Orders:</span>
+    <strong>{{ todo.total_orders }}</strong>
+  </div>
+  <div class="sub-metric-divider"></div>
+  <div class="sub-metric-item">
+    <span class="muted">Total Revenue:</span>
+    <strong style="color:#059669;">৳{{ '%.0f'|format(m.revenue) }}</strong>
+  </div>
+  <div class="sub-metric-divider"></div>
+  <div class="sub-metric-item">
+    <span class="muted">bKash Verified:</span>
+    <strong style="color:#BE185D;">৳{{ '%.0f'|format(m.bkash_amount if m.bkash_amount else 0) }}</strong>
+  </div>
+  <div class="sub-metric-divider"></div>
+  <div class="sub-metric-item">
+    <span class="muted">Cash on Delivery:</span>
+    <strong style="color:#B45309;">৳{{ '%.0f'|format(m.cod_amount if m.cod_amount else 0) }}</strong>
+  </div>
+  <div class="sub-metric-divider"></div>
+  <div class="sub-metric-item">
+    <span class="muted">Cancelled / Rejected:</span>
+    <strong style="color:#DC2626;">{{ todo.cancelled_rejected }}</strong>
+  </div>
+  <div class="sub-metric-divider"></div>
+  <a href="{{ url_for('main.admin_customers') }}" class="sub-metric-item" style="text-decoration:none; color:inherit;">
+    <span class="muted">Customer Master:</span>
+    <strong style="color:#C2410C;">👥 {{ customer_metrics.total_customers if customer_metrics else 0 }} (VIP: {{ customer_metrics.vip_customers if customer_metrics else 0 }})</strong>
+  </a>
+</div>
+
+<!-- Horizontal Queue Navigation Tabs -->
+<div class="smart-queue-tabs">
+  <a href="{{ url_for('main.admin_dashboard', from_date=from_date, to_date=to_date, all_time=1 if all_time else 0) }}" class="smart-tab-item {{ 'active' if not queue else '' }}">
+    <span>📋 All Orders</span>
+    <span class="smart-tab-badge">{{ todo.total_orders }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='payment_pending', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'payment_pending' else '' }}">
+    <span>⚡ Payment Pending</span>
+    <span class="smart-tab-badge">{{ todo.payment_pending }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='packaging_pending', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'packaging_pending' else '' }}">
+    <span>📦 Packaging Pending</span>
+    <span class="smart-tab-badge">{{ todo.packaging_pending }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='gate_out_pending', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'gate_out_pending' else '' }}">
+    <span>🚪 Gate Out Pending</span>
+    <span class="smart-tab-badge">{{ todo.gate_out_pending }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='delivery_pending', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'delivery_pending' else '' }}">
+    <span>🚚 Delivery Pending</span>
+    <span class="smart-tab-badge">{{ todo.delivery_pending }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='feedback_pending', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'feedback_pending' else '' }}">
+    <span>💬 Feedback Pending</span>
+    <span class="smart-tab-badge">{{ todo.feedback_pending }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='completed', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'completed' else '' }}">
+    <span>✅ Completed List</span>
+    <span class="smart-tab-badge">{{ todo.completed }}</span>
+  </a>
+  <a href="{{ url_for('main.admin_dashboard', queue='cancelled_rejected', all_time=1) }}" class="smart-tab-item {{ 'active' if queue == 'cancelled_rejected' else '' }}">
+    <span>❌ Cancelled / Rejected</span>
+    <span class="smart-tab-badge">{{ todo.cancelled_rejected }}</span>
+  </a>
+</div>
+
+<!-- Meta & WhatsApp Operational Notes Guide (Collapsible) -->
+<details class="form-card" style="padding:14px 18px; margin-bottom:18px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px;">
+  <summary style="cursor:pointer; font-weight:800; font-size:14px; color:#92400E; display:flex; align-items:center; justify-content:space-between; list-style:none;">
+    <span style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:18px;">📌</span>
+      <span>WhatsApp Cloud API &amp; Messenger — অ্যাডমিন জরুরি নোটস ও কাজের নিয়মাবলি</span>
+    </span>
+    <span style="font-size:12px; background:#FEF3C7; color:#B45309; padding:3px 10px; border-radius:20px; font-weight:700;">
+      গাইড দেখতে ক্লিক করুন &darr;
+    </span>
+  </summary>
+
+  <div style="margin-top:14px; border-top:1px solid #FDE68A; padding-top:14px; font-size:13px; color:#78350F; line-height:1.6;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+      <div style="background:#FFFFFF; border:1px solid #FDE68A; border-radius:8px; padding:12px;">
+        <strong style="color:#B45309; font-size:13.5px; display:block; margin-bottom:4px;">🚀 ১. মেটা সেটআপ (developers.facebook.com)</strong>
+        • WhatsApp API Setup থেকে Phone Number ID ও WABA ID বসান।<br>
+        • System Users থেকে Permanent Token বসান।<br>
+        • Webhook URL: <code>/webhook</code> &middot; Verify Token: <code>ms_ladies_shoes_meta_verify_2026</code><br>
+        • Webhook Field: <code>messages</code> Subscribe করুন।
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #FDE68A; border-radius:8px; padding:12px;">
+        <strong style="color:#B45309; font-size:13.5px; display:block; margin-bottom:4px;">🤖 ২. স্মার্ট চ্যাটবট ও অর্ডার অটো-লিংক</strong>
+        • কাস্টমার মেসেজ দিলে Tracking ID (যেমন <code>A0368762965B</code>), Order ID (যেমন <code>#12</code>), বা মোবাইল নম্বর থেকে সিস্টেম স্বয়ংক্রিয়ভাবে অর্ডার শনাক্ত করে।<br>
+        • কাস্টমারকে লাইভ ট্র্যাকিং লিঙ্ক, জুতার সাইজ ও পরিমাণসহ অটো-রিপ্লাই পাঠায়।
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #FDE68A; border-radius:8px; padding:12px;">
+        <strong style="color:#B45309; font-size:13.5px; display:block; margin-bottom:4px;">📦 ৩. ৫-ধাপের অর্ডার অটো-নোটিফিকেশন</strong>
+        ১. <strong>Payment Verified:</strong> পেমেন্ট নিশ্চিতকরণ ও প্যাকেজিং শুরু।<br>
+        ২. <strong>Packaged:</strong> জুতা বক্স ও সিল প্যাক সম্পন্ন।<br>
+        ৩. <strong>Gate Out / Out for Delivery:</strong> কুরিয়ার ও কনসাইনমেন্ট নম্বরসহ অ্যালার্ট।<br>
+        ৪. <strong>Delivered:</strong> ডেলিভারি সমাপ্তি ও স্টার রেটিং রিভিউ লিঙ্ক।<br>
+        ৫. <strong>Completed:</strong> অর্ডার সমাপ্তির ধন্যবাদ বার্তা।
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #FDE68A; border-radius:8px; padding:12px;">
+        <strong style="color:#B45309; font-size:13.5px; display:block; margin-bottom:4px;">💰 ৪. বিলিং ও ২৪ ঘণ্টার ফ্রি উইন্ডো</strong>
+        • মেটা প্রতি মাসে প্রথম <strong>১,০০০টি কাস্টমার-ইনশিয়েটেড কনভারসেশন সম্পূর্ণ ফ্রি</strong> দেয়।<br>
+        • কাস্টমারের শেষ মেসেজের পরবর্তী ২৪ ঘণ্টা পর্যন্ত সম্পূর্ণ ফ্রিতে যেকোনো মেসেজ পাঠানো যায়।
+      </div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+      <a href="{{ url_for('main.admin_messenger', channel='admin_notes') }}" class="btn sm navy" style="text-decoration:none; background:#0F172A; font-size:12px;">
+        📖 বিস্তারিত অ্যাডমিন নোটস পেজে যান &rarr;
+      </a>
+    </div>
+  </div>
+</details>
+
+<!-- Search & Date Filter Card -->
+<div class="form-card" style="padding:16px; margin-bottom:18px;">
+  <form class="filter" method="get" action="{{ url_for('main.admin_dashboard') }}" style="display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
+    {% if queue %}<input type="hidden" name="queue" value="{{ queue }}">{% endif %}
+    {% if all_time %}<input type="hidden" name="all_time" value="1">{% endif %}
+
+    <!-- Search Input -->
+    <div style="flex:1; min-width:260px;">
+      <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;">🔍 Search Orders</label>
+      <input type="text" name="q" value="{{ q if q else '' }}" placeholder="Customer name, phone, WhatsApp, order #, SKU, TrxID, courier..." style="padding:8px 12px; width:100%;">
+    </div>
+
+    <!-- Date Range (Only if not in All-Time Backlog mode) -->
+    <div>
+      <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;">From Date</label>
+      <input type="date" name="from_date" value="{{ from_date }}" style="padding:8px 10px;">
+    </div>
+    <div>
+      <label style="font-size:12px; font-weight:700; margin-bottom:4px; display:block;">To Date</label>
+      <input type="date" name="to_date" value="{{ to_date }}" style="padding:8px 10px;">
+    </div>
+
+    <!-- Filter Buttons -->
+    <div style="display:flex; gap:8px;">
+      <button class="btn navy" type="submit" style="padding:9px 18px; font-size:13.5px;">Filter</button>
+      
+      {% if all_time %}
+      <a href="{{ url_for('main.admin_dashboard', queue=queue, q=q, all_time=0) }}" class="btn sm gray" style="text-decoration:none; padding:8px 12px; font-size:12.5px;">
+        📅 Filter by Date
+      </a>
+      {% else %}
+      <a href="{{ url_for('main.admin_dashboard', queue=queue, q=q, all_time=1) }}" class="btn sm orange" style="text-decoration:none; padding:8px 12px; font-size:12.5px;">
+        ⚡ Show All Backlog
+      </a>
+      {% endif %}
+
+      {% if queue or q or all_time %}
+      <a href="{{ url_for('main.admin_dashboard') }}" class="btn sm bad" style="text-decoration:none; padding:8px 12px; font-size:12.5px;">
+        ✕ Reset
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Filter Status Indicator -->
+  <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:13px; color:var(--admin-muted);">
+    <div>
+      Showing <strong>{{ order_count }}</strong> order(s)
+      {% if queue == 'payment_pending' %}in <strong>⚡ Payment Verification Pending</strong>
+      {% elif queue == 'packaging_pending' %}in <strong>📦 Packaging Pending</strong>
+      {% elif queue == 'gate_out_pending' %}in <strong>🚪 Gate Out Delivery Pending</strong>
+      {% elif queue == 'delivery_pending' %}in <strong>🚚 Delivery Pending (In Transit)</strong>
+      {% elif queue == 'feedback_pending' %}in <strong>💬 Customer Feedback Pending</strong>
+      {% elif queue == 'completed' %}in <strong>✅ Completed List</strong>
+      {% elif queue == 'cancelled_rejected' %}in <strong>❌ Cancelled / Rejected</strong>
+      {% else %}across all stages
+      {% endif %}
+      {% if all_time %}<span style="color:#2563EB; font-weight:700;">(All Time Backlog)</span>{% else %}({{ from_date }} to {{ to_date }}){% endif %}
+    </div>
+
+    <!-- Quick Presets -->
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      {% for label, qf, qt in quick %}
+      <a href="{{ url_for('main.admin_dashboard', from_date=qf, to_date=qt, queue=queue, q=q) }}" style="font-size:12px; color:var(--admin-blue); text-decoration:none; font-weight:600; padding:2px 6px; background:#F1F5F9; border-radius:4px;">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Smart Orders Manifest Table -->
+<div class="form-card" style="padding:0; overflow:hidden;">
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width:110px;"># Order & Date</th>
+          <th style="min-width:160px;">Customer & Contact</th>
+          <th style="min-width:180px;">Product Item</th>
+          <th style="min-width:150px;">Payment</th>
+          <th style="min-width:140px;">Current Stage</th>
+          <th style="min-width:130px;">Courier Partner</th>
+          <th style="text-align:right; min-width:180px;">Smart Admin Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <!-- # Order & Date -->
+          <td>
+            <a href="{{ url_for('main.admin_order', order_id=o.id) }}" style="font-size:15px; font-weight:800; color:var(--admin-navy); text-decoration:none;">
+              #{{ o.id }}
+            </a>
+            <div class="muted" style="font-size:11.5px; margin-top:2px;">
+              {{ o.created_at.strftime('%d %b %Y') if o.created_at else '' }}
+            </div>
+            <div style="margin-top:4px;">
+              <a href="{{ url_for('main.track_order', tracking_hash=o.tracking_hash) }}" target="_blank" style="font-size:11px; text-decoration:none; color:#2563EB; font-weight:700; background:#EFF6FF; padding:2px 6px; border-radius:4px; display:inline-block;">
+                📍 {{ o.tracking_hash }}
+              </a>
+            </div>
+          </td>
+
+          <!-- Customer & Contact -->
+          <td>
+            <div style="font-weight:700; font-size:14px; color:#0F172A;">{{ o.customer_name }}</div>
+            <div style="font-size:12.5px; color:#475569; margin:2px 0;">
+              <a href="tel:{{ o.mobile_number }}" style="color:inherit; text-decoration:none;">{{ o.mobile_number }}</a>
+            </div>
+            <!-- 1-Click WhatsApp Button -->
+            {% set wa_clean = (o.whatsapp_number or o.mobile_number)|replace(' ','')|replace('+','') %}
+            {% if wa_clean.startswith('0') %}{% set wa_target = '88' + wa_clean.lstrip('0') %}{% else %}{% set wa_target = wa_clean %}{% endif %}
+            <a href="https://wa.me/{{ wa_target }}" target="_blank" style="display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:#15803D; background:#DCFCE7; padding:2px 8px; border-radius:12px; text-decoration:none; margin-top:3px;">
+              <span>💬 WhatsApp</span>
+            </a>
+            <div class="muted" style="font-size:11.5px; margin-top:4px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ o.full_address }}">
+              {{ o.full_address }} ({{ o.division }})
+            </div>
+          </td>
+
+          <!-- Product Item -->
+          <td>
+            <div style="font-weight:700; color:var(--admin-navy); font-size:13.5px;">{{ o.product_title }}</div>
+            <div class="muted" style="font-size:11.5px;">SKU: <strong>{{ o.product_sku }}</strong></div>
+            <div style="font-size:12px; font-weight:600; color:#334155; margin-top:3px;">
+              Size {{ o.shoe_size }} &middot; {{ o.quantity }} pair(s)
+            </div>
+            <div style="font-weight:800; color:var(--admin-navy); font-size:13.5px; margin-top:2px;">
+              ৳{{ '%.0f'|format(o.total_amount) }}
+              {% if o.delivery_charge == 0 %}
+              <span style="font-size:10.5px; color:#059669; font-weight:700; background:#D1FAE5; padding:1px 5px; border-radius:4px;">Free Delivery</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Payment -->
+          <td>
+            {% if o.payment_method == 'cod' %}
+            <div>
+              <span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:800; font-size:12px;">💵 COD</span>
+            </div>
+            <div style="font-size:11.5px; color:#78350F; margin-top:3px; font-weight:600;">
+              Collect: ৳{{ '%.0f'|format(o.total_amount) }}
+            </div>
+            {% else %}
+            <div>
+              <span class="pill" style="background:#FCE7F3; color:#BE185D; font-weight:800; font-size:11px;">bKash</span>
+              {% if o.verification_status %}
+              <span class="pill {{ o.verification_status|lower }}" style="font-size:11px;">{{ o.verification_status }}</span>
+              {% endif %}
+            </div>
+            <div style="margin-top:3px;">
+              <code style="background:#F1F5F9; padding:2px 6px; border-radius:4px; font-weight:800; font-size:11.5px; color:#0F172A;">
+                {{ o.transaction_id or 'No TrxID' }}
+              </code>
+            </div>
+            {% endif %}
+          </td>
+
+          <!-- Current Stage Badge -->
+          <td>
+            {% if o.status == 'Payment Pending' %}
+            <span class="smart-stage-badge stage-verify">⚡ Payment Pending</span>
+            {% elif o.status == 'Payment Verified' or (o.status == 'Order Placed' and o.payment_method == 'cod') %}
+            <span class="smart-stage-badge stage-pack">📦 Packaging Pending</span>
+            {% elif o.status == 'Packaging' %}
+            <span class="smart-stage-badge stage-gateout">🚪 Gate Out Pending</span>
+            {% elif o.status == 'Out for Delivery' %}
+            <span class="smart-stage-badge stage-transit">🚚 In Transit</span>
+            {% elif o.status == 'Received' and not o.feedback_id %}
+            <span class="smart-stage-badge stage-feedback">💬 Feedback Pending</span>
+            {% elif o.status == 'Completed' or (o.status == 'Received' and o.feedback_id) %}
+            <span class="smart-stage-badge stage-done">✅ Completed</span>
+            {% elif o.status in ('Payment Rejected', 'Cancelled') %}
+            <span class="smart-stage-badge stage-cancelled">❌ {{ o.status }}</span>
+            {% else %}
+            <span class="pill {{ o.status|lower|replace(' ','-') }}">{{ o.status }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Courier Info -->
+          <td>
+            {% if o.courier_name %}
+            <div style="font-weight:700; font-size:12.5px; color:#0F172A;">{{ o.courier_name }}</div>
+            {% if o.consignment_id %}
+            <div style="font-size:11px; color:#64748B;"><code>{{ o.consignment_id }}</code></div>
+            {% endif %}
+            {% elif o.status in ('Payment Verified', 'Packaging') or (o.status == 'Order Placed' and o.payment_method == 'cod') %}
+            <span class="muted" style="font-size:11.5px;">Ready for pickup</span>
+            {% else %}
+            <span class="muted" style="font-size:11.5px;">—</span>
+            {% endif %}
+          </td>
+
+          <!-- 1-Click Smart Admin Actions -->
+          <td style="text-align:right;">
+            <div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+              <!-- 1. Verify Payment Action -->
+              {% if o.status == 'Payment Pending' and o.verification_status == 'Pending' %}
+              <form method="post" action="{{ url_for('main.admin_payment', order_id=o.id) }}" style="display:inline;">
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn-action-verify" title="Verify & Approve bKash payment">
+                  ✓ Approve
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('main.admin_payment', order_id=o.id) }}" style="display:inline;">
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn sm bad" style="padding:5px 8px; font-size:11.5px;" title="Reject payment">
+                  ✕
+                </button>
+              </form>
+
+              <!-- 2. Packaging Action -->
+              {% elif (o.status == 'Payment Verified' or (o.status == 'Order Placed' and o.payment_method == 'cod')) and o.status != 'Packaging' %}
+              <form method="post" action="{{ url_for('main.admin_pack', order_id=o.id) }}" style="display:inline;">
+                <button type="submit" class="btn-action-pack" title="Mark as Packaged and move to Gate Out queue">
+                  📦 Mark Packaged
+                </button>
+              </form>
+
+              <!-- 3. Gate Out Handover Action -->
+              {% elif o.status == 'Packaging' %}
+              <button type="button" class="btn-action-gateout" onclick="openGateOutModal({{ o.id }}, '{{ o.customer_name }}', '{{ o.courier_name or 'Steadfast' }}', '{{ o.consignment_id or '' }}')" title="Handover to Courier and Mark Out for Delivery">
+                🚪 Gate Out Handover
+              </button>
+
+              <!-- 4. Delivery Confirmation Action -->
+              {% elif o.status == 'Out for Delivery' %}
+              <form method="post" action="{{ url_for('main.admin_received', order_id=o.id) }}" style="display:inline;">
+                <button type="submit" class="btn-action-delivered" title="Mark parcel as delivered to customer">
+                  ✅ Mark Delivered
+                </button>
+              </form>
+
+              <!-- 5. Feedback Pending / Close Action -->
+              {% elif o.status == 'Received' and not o.feedback_id %}
+              <form method="post" action="{{ url_for('main.admin_complete', order_id=o.id) }}" style="display:inline;">
+                <button type="submit" class="btn-action-close" title="Verify & close order as completed">
+                  🏁 Close Order
+                </button>
+              </form>
+
+              <!-- 6. Completed -->
+              {% elif o.status == 'Completed' or (o.status == 'Received' and o.feedback_id) %}
+              <span style="font-size:11.5px; color:#059669; font-weight:700; padding:4px 6px;">
+                ⭐️ Complete
+              </span>
+              {% endif %}
+
+              <!-- Always View Details Button -->
+              <a href="{{ url_for('main.admin_order', order_id=o.id) }}" class="btn sm navy" style="padding:5px 10px; font-size:12px; text-decoration:none;">
+                Open
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center; padding:50px 20px; color:var(--admin-muted);">
+            <div style="font-size:32px; margin-bottom:10px;">📋</div>
+            <strong style="font-size:16px; color:#1E293B; display:block; margin-bottom:4px;">No orders found in this operational queue</strong>
+            <p style="margin:0; font-size:13.5px;">Try switching queues above or click "Show All Backlog" to view orders from all dates.</p>
+            <div style="margin-top:14px;">
+              <a href="{{ url_for('main.admin_dashboard') }}" class="btn navy sm" style="text-decoration:none;">
+                View All Orders
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Gate Out Handover Modal Popup -->
+<div id="gateOutModal" class="modal-overlay">
+  <div class="modal-content-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0; font-size:18px; color:var(--admin-navy); display:flex; align-items:center; gap:8px;">
+        <span>🚪</span> Gate Out: Courier Handover
+      </h3>
+      <button type="button" onclick="closeGateOutModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#64748B;">
+        &times;
+      </button>
+    </div>
+
+    <p style="font-size:13.5px; color:#475569; margin-top:0; margin-bottom:16px;">
+      Handing over packaged shoes for <strong id="modalCustomerName">Customer</strong> to the courier rider.
+    </p>
+
+    <form id="gateOutForm" method="post" action="">
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">Select Courier Delivery Partner *</label>
+        <select id="modalCourierSelect" name="courier" required style="width:100%; padding:10px; border-radius:8px; border:1px solid #CBD5E1; font-size:14px;">
+          {% for c in couriers %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">Consignment / Tracking Number (Optional)</label>
+        <input id="modalConsignmentInput" name="consignment_id" placeholder="e.g. STEAD-98765432" style="width:100%; padding:10px; border-radius:8px; border:1px solid #CBD5E1; font-size:14px;">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeGateOutModal()" class="btn-cancel" style="padding:10px 18px; font-size:13.5px;">
+          Cancel
+        </button>
+        <button type="submit" class="btn-action-gateout" style="padding:10px 20px; font-size:14px; border-radius:8px;">
+          🚪 Confirm Gate Out & Dispatch
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openGateOutModal(orderId, customerName, defaultCourier, consignment) {
+  var modal = document.getElementById('gateOutModal');
+  var form = document.getElementById('gateOutForm');
+  var nameEl = document.getElementById('modalCustomerName');
+  var courierEl = document.getElementById('modalCourierSelect');
+  var consEl = document.getElementById('modalConsignmentInput');
+
+  form.action = '/admin/order/' + orderId + '/dispatch';
+  nameEl.textContent = customerName + ' (Order #' + orderId + ')';
+  if (defaultCourier) courierEl.value = defaultCourier;
+  if (consignment) consEl.value = consignment;
+
+  modal.classList.add('open');
+}
+
+function closeGateOutModal() {
+  document.getElementById('gateOutModal').classList.remove('open');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeGateOutModal();
+});
+</script>
+{% endblock %}

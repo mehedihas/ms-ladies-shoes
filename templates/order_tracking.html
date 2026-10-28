@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.id }} Tracking - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div id="liveTracker" data-status="{{ order.status }}">
+  
+  <!-- Header & Visual Step Progress -->
+  <div class="tracking-status-card">
+    <div class="tracking-card-header">
+      <div>
+        <div class="tracking-hash-badge">TRACKING ID: {{ order.tracking_hash }}</div>
+        <h1 class="tracking-title">Order Status: #{{ order.id }}</h1>
+      </div>
+      <div>
+        <span class="pill {{ order.status|lower|replace(' ','-') }}">
+          {{ order.status }}
+        </span>
+      </div>
+    </div>
+
+    <!-- 4-Step Visual Progress Bar -->
+    <div class="progress">
+      {% for s in steps %}
+      <div class="step {{ 'done' if loop.index0 < idx else ('now' if loop.index0 == idx else '') }}">
+        <b>{{ loop.index }}</b>
+        <span>{{ s }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Order Details Summary Panel -->
+  <div class="tracking-summary-card">
+    <h3 class="panel-section-title">
+      📦 Order Summary
+    </h3>
+    <div class="kv">
+      <div>Product Item</div><div><strong>{{ order.product_title }}</strong> (SKU: {{ order.product_sku }})</div>
+      <div>Shoe Size / Qty</div><div>Size {{ order.shoe_size }} &middot; Quantity: {{ order.quantity }}</div>
+      <div>Unit Price</div><div>৳{{ '%.0f'|format(order.unit_price) }}</div>
+      <div>Delivery Charge</div>
+      <div>
+        {% if order.delivery_charge == 0 %}
+        <span style="color:#059669; font-weight:700;">৳0 (bKash Free Delivery)</span>
+        {% else %}
+        ৳{{ '%.0f'|format(order.delivery_charge) }} ({{ order.division }})
+        {% endif %}
+      </div>
+      <div>Payment Method</div>
+      <div>
+        {% if order.payment_method == 'cod' %}
+        <span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:700;">💵 Cash on Delivery (COD)</span>
+        {% else %}
+        <span class="pill" style="background:#FCE7F3; color:#BE185D; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+          <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" style="height:14px; vertical-align:middle;">
+          <span>bKash Send Money</span>
+        </span>
+        {% endif %}
+      </div>
+      <div>Total Payable</div><div><strong class="grand-total-highlight">৳{{ '%.0f'|format(order.total_amount) }}</strong></div>
+      <div>Customer Name</div><div>{{ order.customer_name }}</div>
+      <div>Mobile Number</div><div>{{ order.mobile_number }} {% if order.whatsapp_number %}(WhatsApp: {{ order.whatsapp_number }}){% endif %}</div>
+      <div>Delivery Address</div><div>{{ order.full_address }}</div>
+      {% if order.notes %}<div>Order Notes</div><div>{{ order.notes }}</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Messenger Tracking Alert Banner -->
+  {% if messenger_enabled and messenger_page_id %}
+  <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#0084FF"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.208V22l3.373-1.851c.913.253 1.884.391 2.892.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.042 12.443l-2.55-2.721-4.975 2.721 5.474-5.814 2.613 2.721 4.912-2.721-5.474 5.814z"/></svg>
+      <div>
+        <strong style="color:#1E40AF; font-size:14.5px; display:block;">মেসেঞ্জারে অটোমেটিক ট্র্যাকিং আপডেট পেতে চান?</strong>
+        <span style="font-size:12.5px; color:#3B82F6;">ফেসবুক মেসেঞ্জারে আপনার অর্ডারের প্রতিটি ধাপের আপডেট ও নোটিফিকেশন সাথে সাথে চলে যাবে।</span>
+      </div>
+    </div>
+    <a href="https://m.me/{{ messenger_page_id }}?text=Track%20{{ order.tracking_hash }}" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#0084FF; color:#FFFFFF; font-weight:700; font-size:13.5px; padding:9px 18px; border-radius:30px; text-decoration:none; box-shadow:0 2px 6px rgba(0,132,255,0.3);">
+      💬 মেসেঞ্জারে যুক্ত করুন
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Step 1: Payment or COD Processing -->
+  {% if order.status in ('Order Placed', 'Payment Rejected') %}
+    {% if order.payment_method == 'cod' %}
+    <!-- COD Order Confirmed Step -->
+    <div class="tracking-step-card cod-step-card">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+        <span style="font-size:32px;">📦</span>
+        <div>
+          <h3 class="step-card-title" style="margin:0;">Step 1 – Order Confirmed (Cash on Delivery)</h3>
+          <span style="font-size:13px; color:#059669; font-weight:700;">✅ আপনার ক্যাশ অন ডেলিভারি অর্ডারটি সফলভাবে গৃহীত হয়েছে</span>
+        </div>
+      </div>
+
+      <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #FEF3C7; padding-bottom:10px; margin-bottom:10px;">
+          <span style="font-size:15px; font-weight:600; color:#92400E;">পণ্য পাওয়ার সময় মোট প্রদেয় মূল্য:</span>
+          <strong style="font-size:22px; color:#B45309;">৳{{ '%.0f'|format(order.total_amount) }}</strong>
+        </div>
+        <p style="margin:0; font-size:13.5px; color:#78350F; line-height:1.5;">
+          💵 ডেলিভারি চার্জ ৳{{ '%.0f'|format(order.delivery_charge) }} সহ মোট ৳{{ '%.0f'|format(order.total_amount) }} পার্সেল হাতে পেয়ে ডেলিভারি ম্যানের কাছে পরিশোধ করবেন। আমাদের প্রতিনিধি আপনার সাথে ফোনে যোগাযোগ করে অর্ডার কনফার্ম করে দ্রুত পাঠিয়ে দেবে।
+        </p>
+      </div>
+
+      <!-- Option to switch to bKash and get free delivery -->
+      <div class="bkash-switch-promo">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" style="height:26px;">
+          <div>
+            <strong style="color:#BE185D; font-size:15px;">💡 বিকাশ সেন্ড মানি করে ফ্রি ডেলিভারি পেতে চান?</strong>
+            <div style="font-size:12.5px; color:#475569;">এখনই বিকাশ সেন্ড মানি করে TrxID দিলে আপনার ডেলিভারি চার্জ ফ্রি করা হবে!</div>
+          </div>
+        </div>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer; font-size:13px; font-weight:700; color:#BE185D; padding:6px 12px; background:#FDF2F8; border-radius:6px; display:inline-block;">
+            👉 বিকাশ সেন্ড মানি করে TrxID দিতে এখানে ক্লিক করুন
+          </summary>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px dashed #FBCFE8;">
+            <p style="font-size:13px; color:#334155; margin-bottom:8px;">
+              বিকাশ পার্সোনাল নাম্বারে <strong>{{ bkash_no }}</strong> সেন্ড মানি করে নিচে TrxID দিন:
+            </p>
+            <form method="post" action="{{ url_for('main.submit_payment') }}">
+              <input type="hidden" name="tracking_hash" value="{{ order.tracking_hash }}">
+              <div class="row">
+                <div>
+                  <label for="bkash_number" class="sweet-label">bKash Account Number *</label>
+                  <input type="tel" id="bkash_number" name="bkash_number" required placeholder="01XXXXXXXXX" value="{{ order.mobile_number }}">
+                </div>
+                <div>
+                  <label for="transaction_id" class="sweet-label">bKash TrxID *</label>
+                  <input type="text" id="transaction_id" name="transaction_id" required placeholder="e.g. 9AB3C4D5EF">
+                </div>
+              </div>
+              <input type="hidden" name="full_address" value="{{ order.full_address }}">
+              <button class="btn-order-now submit-order-btn" type="submit" style="margin-top:10px; background:linear-gradient(135deg,#E2136E,#BE185D);">
+                <span>Submit bKash TrxID</span>
+              </button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </div>
+    {% else %}
+    <!-- bKash Payment Form -->
+    <div class="tracking-step-card payment-step">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" style="height:32px;">
+          <h3 class="step-card-title" style="margin:0;">Step 1 – Pay Money via bKash</h3>
+        </div>
+        {% if order.delivery_charge == 0 %}
+        <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:800; font-size:12px;">🎉 FREE DELIVERY APPLIED!</span>
+        {% endif %}
+      </div>
+      
+      {% if rejected %}
+      <div class="flash error">
+        Your payment details could not be verified{% if order.pay_note %}: {{ order.pay_note }}{% endif %}. Please submit the correct TrxID below.
+      </div>
+      {% endif %}
+
+      <div class="bkash-instructions-box" style="border: 2px solid #FBCFE8; background: #FFF5F7;">
+        <p class="bkash-instructions-text" style="color: #831843;">
+          Please send total amount <strong style="font-size:22px; color:#BE185D;">৳{{ '%.0f'|format(order.total_amount) }}</strong> to our bKash Personal Number:
+        </p>
+        <div class="bkash-number-highlight" style="background:#E2136E; color:#FFFFFF; font-size:24px; letter-spacing:1.5px;">
+          {{ bkash_no }}
+        </div>
+        <div class="bkash-subtext" style="color: #9D174D; font-weight:600;">
+          bKash App অথবা *247# ডায়াল করে <strong>Send Money</strong> অপশন ব্যবহার করুন।
+        </div>
+      </div>
+
+      <form method="post" action="{{ url_for('main.submit_payment') }}">
+        <input type="hidden" name="tracking_hash" value="{{ order.tracking_hash }}">
+        
+        <div class="row">
+          <div>
+            <label for="bkash_number" class="sweet-label">Your bKash Account Number <span class="required-star">*</span></label>
+            <input type="tel" id="bkash_number" name="bkash_number" required placeholder="01XXXXXXXXX" value="{{ order.bkash_number if order.bkash_number else order.mobile_number }}">
+          </div>
+          <div>
+            <label for="transaction_id" class="sweet-label">bKash Transaction ID (TrxID) <span class="required-star">*</span></label>
+            <input type="text" id="transaction_id" name="transaction_id" required placeholder="e.g. 9AB3C4D5EF" value="{{ order.transaction_id if order.transaction_id else '' }}">
+          </div>
+        </div>
+
+        <div class="form-group-wrap" style="margin-top:14px;">
+          <label for="full_address" class="sweet-label">Confirm Delivery Address</label>
+          <textarea id="full_address" name="full_address" rows="2">{{ order.full_address }}</textarea>
+        </div>
+
+        <button class="btn-order-now submit-order-btn" type="submit" style="margin-top:16px; background:linear-gradient(135deg, #E2136E, #9D174D);">
+          <span>✅</span> <span>Submit bKash TrxID for Verification</span>
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+  <!-- Step 2: Verification Pending -->
+  {% elif order.status == 'Payment Pending' %}
+  <div class="tracking-step-card">
+    <h3 class="step-card-title">⏳ Step 2 – Admin Verification Pending</h3>
+    <p style="font-size:15px; color:#334155; line-height:1.6; margin:0;">
+      TrxID <strong>{{ order.transaction_id }}</strong> from bKash number <strong>{{ order.bkash_number }}</strong> has been submitted.
+      Our shop admin will verify the transaction shortly and send you an SMS / WhatsApp message.
+    </p>
+  </div>
+
+  <!-- Step 2: Verified -->
+  {% elif order.status == 'Payment Verified' %}
+  <div class="tracking-step-card verified-step">
+    <h3 class="step-card-title" style="color:#03543F;">✅ bKash Payment Verified</h3>
+    <p style="font-size:15px; color:#03543F; margin:0; line-height:1.6;">
+      Your payment of <strong>৳{{ '%.0f'|format(order.total_amount) }}</strong> is verified! We are packing your shoes for courier dispatch.
+    </p>
+  </div>
+
+  <!-- Step: Packaging -->
+  {% elif order.status == 'Packaging' %}
+  <div class="tracking-step-card" style="background:#EFF6FF; border:1px solid #BFDBFE;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+      <span style="font-size:32px;">📦</span>
+      <div>
+        <h3 class="step-card-title" style="color:#1E40AF; margin:0;">Shoes Packaged & Ready for Dispatch</h3>
+        <span style="font-size:13px; color:#2563EB; font-weight:700;">✅ আপনার জুতোটি যত্নসহকারে প্যাকেজিং সম্পন্ন হয়েছে</span>
+      </div>
+    </div>
+    <p style="font-size:15px; color:#1E3A8A; margin:0; line-height:1.6;">
+      Your shoes are boxed with shipping labels and awaiting courier handover at our dispatch gate. You will receive an SMS/WhatsApp message as soon as the courier rider picks it up!
+    </p>
+  </div>
+
+  <!-- Step 3: Out for Delivery -->
+  {% elif order.status == 'Out for Delivery' %}
+  <div class="tracking-step-card">
+    <h3 class="step-card-title">🚚 Step 3 – Out for Delivery</h3>
+    <p style="font-size:15px; color:#334155; line-height:1.6;">
+      Your parcel is currently in transit with <strong>{{ order.courier_name if order.courier_name else 'Courier Service' }}</strong>
+      {% if order.consignment_id %}(Consignment ID: <strong>{{ order.consignment_id }}</strong>){% endif %}.
+    </p>
+
+    <form method="post" action="{{ url_for('main.mark_received') }}" style="margin-top:16px;">
+      <input type="hidden" name="tracking_hash" value="{{ order.tracking_hash }}">
+      <button class="btn ok" type="submit" style="padding:12px 20px; font-weight:800;">📦 I Have Received My Parcel</button>
+    </form>
+  </div>
+
+  <!-- Step 4: Feedback -->
+  {% elif order.status == 'Received' %}
+  <div class="tracking-step-card">
+    <h3 class="step-card-title">⭐️ Step 4 – Rate Your Shoes</h3>
+    
+    {% if order.feedback_id %}
+    <p style="color:var(--green); font-weight:700; font-size:15px; margin:0;">
+      Thank you for your review! Your rating is published live on the product page.
+    </p>
+    {% else %}
+    <p class="muted" style="margin-bottom:14px;">Please take a moment to rate your new shoes. Your review helps other customers!</p>
+    
+    <form method="post" action="{{ url_for('main.submit_feedback') }}">
+      <input type="hidden" name="tracking_hash" value="{{ order.tracking_hash }}">
+      <label class="sweet-label">Select Star Rating</label>
+      <div class="rate" style="margin-bottom:14px;">
+        {% for n in [5,4,3,2,1] %}
+        <input type="radio" id="r{{ n }}" name="rating" value="{{ n }}" {{ 'checked' if n == 5 }} required>
+        <label for="r{{ n }}">★</label>
+        {% endfor %}
+      </div>
+
+      <label for="comment" class="sweet-label">Your Written Review <span class="required-star">*</span></label>
+      <textarea id="comment" name="comment" rows="3" required placeholder="Write about the quality, size fitting, and comfort of the shoes..."></textarea>
+
+      <button class="btn navy" type="submit" style="margin-top:14px; padding:12px 20px; font-weight:800;">Post Review to Shop</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- Step 5: Completed -->
+  {% elif order.status == 'Completed' %}
+  <div class="tracking-step-card verified-step" style="background:#ECFDF5; border:1px solid #A7F3D0;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+      <span style="font-size:32px;">🎉</span>
+      <div>
+        <h3 class="step-card-title" style="color:#065F46; margin:0;">Order Completed Successfully!</h3>
+        <span style="font-size:13px; color:#059669; font-weight:700;">✅ অর্ডারটি সফলভাবে সম্পন্ন হয়েছে</span>
+      </div>
+    </div>
+    <p style="font-size:15px; color:#047857; margin:0; line-height:1.6;">
+      Thank you for shopping with <strong>{{ shop_name }}</strong>! We hope you love your new shoes. If you need anything else, feel free to contact us anytime.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Event Audit Log Timeline -->
+  {% if events %}
+  <div class="tracking-timeline-card">
+    <h3 class="panel-section-title">
+      📜 Order Tracking History Timeline
+    </h3>
+    <div class="timeline-items-wrap">
+      {% for ev in events %}
+      <div class="timeline-item">
+        <div class="timeline-date-badge">
+          {{ ev.created_at.strftime('%d %b %H:%M') if ev.created_at else '' }}
+        </div>
+        <div class="timeline-detail-text">
+          {{ ev.detail }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

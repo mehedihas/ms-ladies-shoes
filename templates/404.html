@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Page Not Found - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="error-404-card">
+  <div class="error-icon-badge">👠</div>
+  <h1 class="error-title">Page Not Available</h1>
+  <p class="error-desc">{{ msg if msg else 'The page or product you are looking for is no longer available.' }}</p>
+  <a href="{{ url_for('main.home') }}" class="btn orange submit-order-btn" style="text-decoration:none; display:inline-flex;">
+    <span>🏠</span> <span>Return to Shop Homepage</span>
+  </a>
+</div>
+{% endblock %}

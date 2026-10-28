@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Product' if p else 'Add New Product' }} - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+  <div class="admin-title-group">
+    <div class="admin-breadcrumb">
+      <a href="{{ url_for('main.admin_products') }}">← Products Catalog</a> / {{ 'Edit Product' if p else 'New Product' }}
+    </div>
+    <h1>{{ '✏️ Edit Product' if p else '✨ Add New Product' }}</h1>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  <!-- 1. Basic Product Information -->
+  <div class="form-card">
+    <div class="form-card-title">
+      <span>📦 Basic Product Details</span>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="sku">SKU Code <span style="color:red">*</span></label>
+        <input type="text" id="sku" name="sku" value="{{ form.sku if form else (p.sku if p else '') }}" placeholder="e.g. MS-SHOE-101" required>
+        <div class="help-text">Unique identification code for inventory & tracking.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="title">Product Title <span style="color:red">*</span></label>
+        <input type="text" id="title" name="title" value="{{ form.title if form else (p.title if p else '') }}" placeholder="e.g. Elegant Soft Leather Ladies Pump Shoes" required>
+        <div class="help-text">Catchy descriptive title displayed in the shop.</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Store Visibility</label>
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" name="is_active" value="1" {{ 'checked' if (form and form.is_active) or (p and p.is_active) or not p }}>
+          <span class="slider-toggle"></span>
+        </label>
+        <span style="font-weight: 600;">Visible & Available for Customers in Shop</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Pricing Information -->
+  <div class="form-card">
+    <div class="form-card-title">
+      <span>🏷️ Pricing & Discounts</span>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="price">Selling Price (BDT ৳) <span style="color:red">*</span></label>
+        <input type="number" id="price" name="price" step="0.01" min="0" value="{{ form.price if form else (p.price if p else '') }}" placeholder="e.g. 1450" required oninput="calcDiscount()">
+        <div class="help-text">Final selling price paid by customer.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="old_price">Original / Strike-through Price (BDT ৳)</label>
+        <input type="number" id="old_price" name="old_price" step="0.01" min="0" value="{{ form.old_price if form else (p.old_price if p else '') }}" placeholder="e.g. 1850 (Optional)" oninput="calcDiscount()">
+        <div class="help-text">Optional higher price shown crossed out (e.g. <del>৳1,850</del>).</div>
+        <div id="discount-output"></div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--admin-border, #E2E8F0);">
+      <label>bKash Free Delivery Offer</label>
+      <div class="switch-container">
+        <label class="switch">
+          <input type="checkbox" name="is_free_delivery" id="is_free_delivery" value="1" {{ 'checked' if (form and form.is_free_delivery) or (p and p.is_free_delivery) }}>
+          <span class="slider-toggle"></span>
+        </label>
+        <span style="font-weight: 700; color: #BE185D;">💖 Free Delivery on bKash Send Money</span>
+      </div>
+      <div class="help-text" style="margin-top: 6px;">
+        When enabled, customers who choose <strong>bKash Send Money</strong> receive <strong>Free Delivery (৳0)</strong>. Customers choosing <strong>Cash on Delivery (COD)</strong> are always charged the standard delivery fee (৳70 Inside Dhaka / ৳130 Outside Dhaka).
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Available Sizes -->
+  <div class="form-card">
+    <div class="size-selector-header">
+      <div style="font-size:18px; font-weight:700; color:var(--admin-navy);">
+        👠 Available Sizes (Bangladeshi Standard) <span style="color:red">*</span>
+      </div>
+      <div>
+        <button type="button" class="size-quick-btn" onclick="toggleAllSizes(true)">Select All</button>
+        <button type="button" class="size-quick-btn" onclick="toggleAllSizes(false)">Clear</button>
+      </div>
+    </div>
+    <p class="help-text" style="margin-bottom: 12px;">Select all shoe sizes currently in stock for this product:</p>
+    
+    {% set selected_sizes = (form.getlist('sizes') if form else (p.available_sizes.replace(' ','').split(',') if p else [])) %}
+    <div class="size-pills">
+      {% for s in all_sizes %}
+      <label class="size-pill">
+        <input type="checkbox" name="sizes" value="{{ s }}" class="size-checkbox" {{ 'checked' if s in selected_sizes }}>
+        <span>{{ s }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 4. Description -->
+  <div class="form-card">
+    <div class="form-card-title">
+      <span>📝 Description & Product Details</span>
+    </div>
+    <div class="form-group">
+      <label for="description">Product Description</label>
+      <textarea id="description" name="description" rows="4" placeholder="Enter product details, heel height, material, color options, and special comfort features...">{{ form.description if form else (p.description if p else '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- 5. Media Uploads (3 Images + 1 Video) -->
+  <div class="form-card">
+    <div class="form-card-title">
+      <span>🖼️ Media Uploads (3 Images & 1 Video)</span>
+    </div>
+    <p class="help-text" style="margin-bottom: 16px;">
+      Images are automatically optimized and scaled for fast mobile loading. First image will be used on product cards.
+    </p>
+
+    <div class="media-grid">
+      <!-- Image 1 -->
+      <div class="upload-card">
+        <div>
+          <div class="upload-label">
+            Image 1 <span class="badge-req">Required</span>
+          </div>
+          {% set img1 = p.image_1 if p else None %}
+          <img id="prev_image_1" class="upload-preview" src="{{ url_for('static', filename=img1) if img1 else 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 fill=%22%23CBD5E1%22 viewBox=%220 0 16 16%22><path d=%22M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z%22/><path d=%22M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z%22/></svg>' }}">
+        </div>
+        <div>
+          <label class="btn-upload-trigger" for="file_image_1">📁 {{ 'Replace Image 1' if img1 else 'Choose Image 1' }}</label>
+          <input type="file" id="file_image_1" name="image_1" accept="image/*" class="file-input-hidden" onchange="previewFile(this, 'prev_image_1')">
+        </div>
+      </div>
+
+      <!-- Image 2 -->
+      <div class="upload-card">
+        <div>
+          <div class="upload-label">
+            Image 2 <span class="badge-opt">Optional</span>
+          </div>
+          {% set img2 = p.image_2 if p else None %}
+          <img id="prev_image_2" class="upload-preview" src="{{ url_for('static', filename=img2) if img2 else 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 fill=%22%23CBD5E1%22 viewBox=%220 0 16 16%22><path d=%22M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z%22/><path d=%22M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z%22/></svg>' }}">
+        </div>
+        <div>
+          {% if img2 %}
+          <div style="margin-bottom: 6px; font-size: 12px; color: var(--admin-muted);">
+            <label style="display:inline; font-weight:normal; cursor:pointer;">
+              <input type="checkbox" name="remove_image_2" value="1"> Delete image 2
+            </label>
+          </div>
+          {% endif %}
+          <label class="btn-upload-trigger" for="file_image_2">📁 {{ 'Replace Image 2' if img2 else 'Choose Image 2' }}</label>
+          <input type="file" id="file_image_2" name="image_2" accept="image/*" class="file-input-hidden" onchange="previewFile(this, 'prev_image_2')">
+        </div>
+      </div>
+
+      <!-- Image 3 -->
+      <div class="upload-card">
+        <div>
+          <div class="upload-label">
+            Image 3 <span class="badge-opt">Optional</span>
+          </div>
+          {% set img3 = p.image_3 if p else None %}
+          <img id="prev_image_3" class="upload-preview" src="{{ url_for('static', filename=img3) if img3 else 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 fill=%22%23CBD5E1%22 viewBox=%220 0 16 16%22><path d=%22M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z%22/><path d=%22M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z%22/></svg>' }}">
+        </div>
+        <div>
+          {% if img3 %}
+          <div style="margin-bottom: 6px; font-size: 12px; color: var(--admin-muted);">
+            <label style="display:inline; font-weight:normal; cursor:pointer;">
+              <input type="checkbox" name="remove_image_3" value="1"> Delete image 3
+            </label>
+          </div>
+          {% endif %}
+          <label class="btn-upload-trigger" for="file_image_3">📁 {{ 'Replace Image 3' if img3 else 'Choose Image 3' }}</label>
+          <input type="file" id="file_image_3" name="image_3" accept="image/*" class="file-input-hidden" onchange="previewFile(this, 'prev_image_3')">
+        </div>
+      </div>
+
+      <!-- Video Upload -->
+      <div class="upload-card">
+        <div>
+          <div class="upload-label">
+            Product Video <span class="badge-opt">Optional</span>
+          </div>
+          {% set vid = p.video_url if p else None %}
+          <div style="height:120px; background:#0F172A; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px; margin-bottom:10px;">
+            🎬
+          </div>
+          {% if vid %}
+          <div class="help-text" style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;">
+            Current: {{ vid }}
+          </div>
+          {% endif %}
+        </div>
+        <div>
+          {% if vid %}
+          <div style="margin-bottom: 6px; font-size: 12px; color: var(--admin-muted);">
+            <label style="display:inline; font-weight:normal; cursor:pointer;">
+              <input type="checkbox" name="remove_video" value="1"> Delete video
+            </label>
+          </div>
+          {% endif %}
+          <label class="btn-upload-trigger" for="file_video">🎥 {{ 'Replace Video' if vid else 'Choose Video' }}</label>
+          <input type="file" id="file_video" name="video" accept="video/mp4,video/webm" class="file-input-hidden">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="form-actions-bar">
+    <button type="submit" class="btn-save">
+      💾 {{ 'Update Product' if p else 'Save & Publish Product' }}
+    </button>
+    <a href="{{ url_for('main.admin_products') }}" class="btn-cancel">Cancel</a>
+  </div>
+</form>
+
+<script>
+function toggleAllSizes(state) {
+  document.querySelectorAll('.size-checkbox').forEach(cb => cb.checked = state);
+}
+
+function previewFile(input, targetId) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById(targetId).src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function calcDiscount() {
+  const price = parseFloat(document.getElementById('price').value);
+  const oldPrice = parseFloat(document.getElementById('old_price').value);
+  const out = document.getElementById('discount-output');
+
+  if (price > 0 && oldPrice > price) {
+    const diff = oldPrice - price;
+    const pct = Math.round((diff / oldPrice) * 100);
+    out.innerHTML = `<span class="discount-badge">🔥 Customer saves ৳${diff.toFixed(0)} (${pct}% OFF)</span>`;
+  } else {
+    out.innerHTML = '';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", calcDiscount);
+</script>
+{% endblock %}

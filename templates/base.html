@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ shop_name }} - Premium Ladies Shoes Bangladesh{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+
+<!-- Main Top Header -->
+<header class="top-header">
+  <div class="top-header-inner">
+    <a class="brand-logo" href="{{ url_for('main.home') }}">
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="MS Collections" class="nav-logo-img">
+      <span class="brand-name-text">{{ shop_name }}</span>
+    </a>
+
+    <!-- Header Search Bar -->
+    <div class="header-search">
+      <form action="{{ url_for('main.home') }}" method="get">
+        <input type="text" name="q" value="{{ q if q else '' }}" placeholder="Search shoes by SKU or name...">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="header-actions">
+      <a class="header-btn" href="{{ url_for('main.track_lookup') }}">
+        <span>📍 Track</span>
+      </a>
+      <a class="header-btn" href="tel:+8801638431515">
+        <span>📞 Call</span>
+      </a>
+      {% if session.admin %}
+        <a class="header-btn" href="{{ url_for('main.admin_dashboard') }}" style="background:var(--orange);">
+          <span>⚙️ Admin</span>
+        </a>
+        <a class="header-btn" href="{{ url_for('main.admin_logout') }}" style="background:var(--bad);">
+          <span>🚪 Logout</span>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<!-- Admin Sub Navigation Bar (Only Shown When Logged In) -->
+{% if session.admin %}
+<div class="admin-subnav">
+  <div class="admin-subnav-inner">
+    <a href="{{ url_for('main.admin_dashboard') }}" class="admin-subnav-link">📊 Dashboard</a>
+    <a href="{{ url_for('main.admin_customers') }}" class="admin-subnav-link" style="background:#FFF7ED; color:#C2410C; font-weight:700;">👥 Customer Master</a>
+    <a href="{{ url_for('main.admin_products') }}" class="admin-subnav-link">📦 Products List</a>
+    <a href="{{ url_for('main.admin_product_form') }}" class="admin-subnav-link">✨ + Add Product</a>
+    <a href="{{ url_for('main.admin_feedbacks') }}" class="admin-subnav-link">⭐ Reviews</a>
+    <a href="{{ url_for('main.admin_messenger') }}" class="admin-subnav-link" style="background:linear-gradient(135deg, #0084FF 0%, #15803D 50%, #C2410C 100%); color:#FFFFFF;">💬 Omnichannel &amp; 📱 SMS</a>
+    <a href="{{ url_for('main.admin_logout') }}" class="admin-subnav-link logout">🚪 Logout</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Category Filter Bar (Customer View) -->
+<div class="category-bar">
+  <div class="category-bar-inner">
+    <a href="{{ url_for('main.home') }}" class="cat-tag {{ 'active' if not size and not q }}">🏠 All Collection</a>
+    <a href="{{ url_for('main.home', q='heel') }}" class="cat-tag">👠 High Heels</a>
+    <a href="{{ url_for('main.home', q='pump') }}" class="cat-tag">🥿 Flat & Pumps</a>
+    <a href="{{ url_for('main.home', q='sandal') }}" class="cat-tag">👡 Premium Sandals</a>
+    {% for s in sizes|default(['35','36','37','38','39','40','41']) %}
+    <a href="{{ url_for('main.home', size=s) }}" class="cat-tag {{ 'active' if size == s }}">Size {{ s }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="container">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}
+      <div class="flash {{ cat }}">
+        <span>{{ '✅' if cat=='success' else '⚠️' }} {{ m }}</span>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+  <!-- Trust Features Bar -->
+  <div class="trust-bar">
+    <div class="trust-item">
+      <div class="trust-icon">🚚</div>
+      <div>
+        <div class="trust-title">Fast Delivery</div>
+        <div class="trust-desc">Dhaka 24-48h, Outside Dhaka 2-3 Days</div>
+      </div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">🛡️</div>
+      <div>
+        <div class="trust-title">100% Original Quality</div>
+        <div class="trust-desc">Directly Crafted Ladies Footwear</div>
+      </div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">🔄</div>
+      <div>
+        <div class="trust-title">Easy Exchange</div>
+        <div class="trust-desc">Size hassle-free replacement</div>
+      </div>
+    </div>
+    <div class="trust-item">
+      <div class="trust-icon">💳</div>
+      <div>
+        <div class="trust-title">bKash Verified</div>
+        <div class="trust-desc">bKash Merchant Pay 01638431515</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating WhatsApp Chat -->
+<a class="wa-float" href="{{ chat_url }}" target="_blank" rel="noopener" title="Chat on WhatsApp">💬</a>
+
+<script src="{{ url_for('static', filename='js/slider.js') }}"></script>
+<script src="{{ url_for('static', filename='js/tracker.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ o.id }} - Admin Management{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+  <a href="{{ url_for('main.admin_dashboard') }}" class="btn gray sm" style="text-decoration:none;">&larr; Back to Smart Dashboard</a>
+  <div style="display:flex; gap:8px;">
+    <a href="{{ url_for('main.admin_order_print', order_id=o.id) }}" target="_blank" class="btn sm navy" style="text-decoration:none;">🖨️ Print Invoice</a>
+    <a href="{{ link }}" target="_blank" class="btn sm orange" style="text-decoration:none;">📍 Live Customer View</a>
+  </div>
+</div>
+
+<div class="admin-header" style="margin-bottom:18px;">
+  <div>
+    <h1 style="margin:0; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      Order #{{ o.id }}
+      <span class="pill {{ o.status|lower|replace(' ','-') }}">{{ o.status }}</span>
+      {% if o.payment_method == 'cod' %}
+      <span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:800;">💵 Cash on Delivery</span>
+      {% else %}
+      <span class="pill" style="background:#FCE7F3; color:#BE185D; font-weight:800;">bKash Send Money</span>
+      {% endif %}
+    </h1>
+    <div class="muted" style="font-size:13px; margin-top:4px;">Tracking ID: <code>{{ o.tracking_hash }}</code> &middot; Placed: {{ o.created_at }}</div>
+  </div>
+</div>
+
+<!-- Smart Operational Lifecycle Pipeline -->
+<div class="panel" style="padding:16px 20px; margin-bottom:20px; background:#FFFFFF; border-radius:12px; border:1px solid var(--admin-border, #CBD5E1);">
+  <h3 style="margin-top:0; margin-bottom:14px; font-size:15px; color:var(--admin-navy);">🔄 Smart Tracking Lifecycle Progress</h3>
+  <div class="progress" style="margin-bottom:0;">
+    {% set stages_flow = [
+      ('Payment Verified' if o.payment_method == 'bkash' else 'Order Placed', '1. Confirmed'),
+      ('Packaging', '2. Packaging'),
+      ('Packaging', '3. Gate Out'),
+      ('Out for Delivery', '4. In Transit'),
+      ('Received', '5. Feedback'),
+      ('Completed', '6. Completed')
+    ] %}
+    {% set cur_rank = 0 %}
+    {% if o.status == 'Payment Pending' %}{% set cur_rank = 0 %}
+    {% elif o.status == 'Payment Verified' or (o.status == 'Order Placed' and o.payment_method == 'cod') %}{% set cur_rank = 1 %}
+    {% elif o.status == 'Packaging' %}{% set cur_rank = 2 %}
+    {% elif o.status == 'Out for Delivery' %}{% set cur_rank = 3 %}
+    {% elif o.status == 'Received' %}{% set cur_rank = 4 %}
+    {% elif o.status == 'Completed' %}{% set cur_rank = 5 %}
+    {% endif %}
+
+    <div class="step {{ 'done' if cur_rank >= 1 else ('now' if cur_rank == 0 else '') }}">
+      <b>1</b>
+      <span>{{ 'bKash Verified' if o.payment_method == 'bkash' else 'COD Placed' }}</span>
+    </div>
+    <div class="step {{ 'done' if cur_rank >= 2 else ('now' if cur_rank == 1 else '') }}">
+      <b>2</b>
+      <span>Packaging</span>
+    </div>
+    <div class="step {{ 'done' if cur_rank >= 3 else ('now' if cur_rank == 2 else '') }}">
+      <b>3</b>
+      <span>Gate Out</span>
+    </div>
+    <div class="step {{ 'done' if cur_rank >= 4 else ('now' if cur_rank == 3 else '') }}">
+      <b>4</b>
+      <span>In Transit</span>
+    </div>
+    <div class="step {{ 'done' if cur_rank >= 5 else ('now' if cur_rank == 4 else '') }}">
+      <b>5</b>
+      <span>Feedback</span>
+    </div>
+    <div class="step {{ 'done' if cur_rank >= 5 else '' }}">
+      <b>6</b>
+      <span>Completed</span>
+    </div>
+  </div>
+</div>
+
+<!-- Customer & Product Information -->
+<div class="panel">
+  <h3>📦 Customer & Order Summary</h3>
+  <div class="kv">
+    <div>Product Item</div><div><strong>{{ o.product_title }}</strong> (SKU: {{ o.product_sku }})</div>
+    <div>Shoe Size / Qty</div><div>Size {{ o.shoe_size }} &middot; Quantity: {{ o.quantity }} pair(s)</div>
+    <div>Total Payable</div><div><strong style="color:var(--admin-navy); font-size:16px;">৳{{ '%.0f'|format(o.total_amount) }}</strong></div>
+    <div>Customer Name</div><div><strong>{{ o.customer_name }}</strong></div>
+    <div>Mobile Number</div><div><a href="tel:{{ o.mobile_number }}">{{ o.mobile_number }}</a></div>
+    <div>WhatsApp Number</div>
+    <div>
+      {% if o.whatsapp_number or o.mobile_number %}
+      {% set wa_num = o.whatsapp_number or o.mobile_number %}
+      <a href="https://wa.me/88{{ wa_num.lstrip('0') }}" target="_blank" class="btn sm ok" style="padding:4px 10px; font-size:12px; text-decoration:none;">
+        💬 Chat on WhatsApp ({{ wa_num }})
+      </a>
+      {% else %}—{% endif %}
+    </div>
+    <div>Delivery Address</div><div>{{ o.full_address }} ({{ o.division }})</div>
+    <div>Delivery Charge</div>
+    <div>
+      {% if o.delivery_charge == 0 %}
+      <span style="color:#059669; font-weight:700;">৳0 (bKash Free Delivery)</span>
+      {% else %}
+      ৳{{ '%.0f'|format(o.delivery_charge) }} ({{ o.division }})
+      {% endif %}
+    </div>
+    <div>Order Notes</div><div>{{ o.notes or '—' }}</div>
+    <div>Tracking Link</div><div><a href="{{ link }}" target="_blank">{{ link }}</a></div>
+  </div>
+  <div class="actions" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+    <a class="btn ok sm" target="_blank" href="{{ msgs.created.wa }}">WhatsApp: Send Tracking Link</a>
+    <a class="btn gray sm" href="{{ msgs.created.sms }}">SMS: Send Tracking Link</a>
+    <form method="post" action="{{ url_for('main.admin_order_sms_test', order_id=o.id) }}" style="display:inline;">
+      <button type="submit" class="btn sm" style="background:#EF4444; color:#FFFFFF;">
+        📱 Send SMS via Airtel SIM
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Meta Messenger Connection Card -->
+<div class="panel" style="border:1px solid #BFDBFE; background:#F8FAFC;">
+  <h3 style="display:flex; align-items:center; gap:8px; margin-top:0;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#0084FF"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.208V22l3.373-1.851c.913.253 1.884.391 2.892.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.042 12.443l-2.55-2.721-4.975 2.721 5.474-5.814 2.613 2.721 4.912-2.721-5.474 5.814z"/></svg>
+    Meta Messenger Order Tracking
+  </h3>
+  {% if o.messenger_psid %}
+  <div class="kv">
+    <div>Messenger Status</div>
+    <div>
+      <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:800; font-size:12px;">
+        ✅ Connected for Automatic Step Updates
+      </span>
+    </div>
+    <div>Customer PSID</div>
+    <div><code style="font-size:14px; font-weight:700; background:#E2E8F0; padding:2px 6px; border-radius:4px;">{{ o.messenger_psid }}</code></div>
+  </div>
+  <div class="actions" style="margin-top:12px;">
+    <a href="{{ url_for('main.admin_messenger', psid=o.messenger_psid) }}" class="btn sm navy" style="text-decoration:none;">
+      💬 Open Live Chat Thread
+    </a>
+    <form method="post" action="{{ url_for('main.admin_order_messenger_test', order_id=o.id) }}" style="display:inline;">
+      <button type="submit" class="btn sm orange">
+        🔔 Send Test Ping Alert
+      </button>
+    </form>
+  </div>
+  {% else %}
+  <p style="font-size:13.5px; color:#475569; margin:0 0 12px 0;">
+    Customer is not linked to Messenger yet. When the customer messages your Facebook page with their Tracking ID (<code>{{ o.tracking_hash }}</code>) or mobile number, they will be linked automatically!
+  </p>
+  <form method="post" action="{{ url_for('main.admin_order_link_messenger', order_id=o.id) }}" style="display:flex; gap:8px; max-width:480px;">
+    <input type="text" name="messenger_psid" placeholder="Paste Customer's Messenger PSID to link manually..." required style="flex:1; padding:8px 12px; font-size:13px; border-radius:6px; border:1px solid #CBD5E1;">
+    <button type="submit" class="btn sm navy">Link PSID</button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- Meta WhatsApp Business Cloud API Connection Card -->
+<div class="panel" style="border:1px solid #86EFAC; background:#F0FDF4; margin-top:16px;">
+  <h3 style="display:flex; align-items:center; gap:8px; margin-top:0; color:#14532D;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.97.57 3.805 1.554 5.352L2.094 22l4.757-1.428A10.007 10.007 0 0 0 12.031 22C17.568 22 22 17.505 22 12.031 22 6.495 17.568 2 12.031 2zm5.748 14.156c-.24.673-1.393 1.288-1.922 1.344-.504.053-1.127.078-3.414-.863-2.716-1.117-4.48-3.865-4.615-4.045-.135-.18-1.096-1.457-1.096-2.778 0-1.32.69-1.969.936-2.235.24-.265.527-.33.703-.33.176 0 .352.003.504.01.164.009.384-.062.6.457.224.536.764 1.86.83 1.996.067.135.11.293.02.473-.09.18-.135.293-.27.45-.135.158-.284.352-.405.473-.135.135-.277.283-.12.553.158.27 1.053 1.733 2.26 2.808 1.554 1.383 2.862 1.81 3.268 1.978.406.168.644.14.884-.135.24-.275 1.026-1.196 1.302-1.606.276-.41.553-.342.928-.204.375.137 2.38 1.123 2.787 1.326.406.204.676.305.776.474.1.17.1.984-.14 1.657z"/></svg>
+    Meta WhatsApp Cloud API Tracking & Auto-Alerts
+  </h3>
+  {% set target_wa = o.whatsapp_number or o.mobile_number %}
+  {% if target_wa %}
+  <div class="kv">
+    <div>WhatsApp Status</div>
+    <div>
+      <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:800; font-size:12px;">
+        ✅ Ready for Real-Time Cloud API Alerts
+      </span>
+    </div>
+    <div>Customer WhatsApp</div>
+    <div>
+      <code style="font-size:14px; font-weight:700; background:#DCFCE7; color:#15803D; padding:2px 8px; border-radius:4px;">
+        {{ target_wa }}
+      </code>
+    </div>
+  </div>
+  <div class="actions" style="margin-top:12px;">
+    <a href="{{ url_for('main.admin_messenger', channel='whatsapp', wa_id=target_wa) }}" class="btn sm ok" style="text-decoration:none;">
+      💬 Open WhatsApp Cloud Chat Thread
+    </a>
+    <form method="post" action="{{ url_for('main.admin_order_whatsapp_test', order_id=o.id) }}" style="display:inline;">
+      <button type="submit" class="btn sm orange">
+        🔔 Send WhatsApp Test Ping
+      </button>
+    </form>
+  </div>
+  <details style="margin-top:10px; font-size:12.5px; color:#475569;">
+    <summary style="cursor:pointer; font-weight:600; color:#15803D;">Change / Link different WhatsApp number</summary>
+    <form method="post" action="{{ url_for('main.admin_order_link_whatsapp', order_id=o.id) }}" style="display:flex; gap:8px; max-width:480px; margin-top:8px;">
+      <input type="text" name="whatsapp_number" value="{{ o.whatsapp_number or '' }}" placeholder="e.g. 017XXXXXXXX or 88017XXXXXXXX" required style="flex:1; padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #CBD5E1;">
+      <button type="submit" class="btn sm navy">Update Number</button>
+    </form>
+  </details>
+  {% else %}
+  <p style="font-size:13.5px; color:#475569; margin:0 0 12px 0;">
+    No WhatsApp number is linked yet. When customer messages with their Tracking ID (<code>{{ o.tracking_hash }}</code>) or phone number, it links automatically!
+  </p>
+  <form method="post" action="{{ url_for('main.admin_order_link_whatsapp', order_id=o.id) }}" style="display:flex; gap:8px; max-width:480px;">
+    <input type="text" name="whatsapp_number" placeholder="Enter customer's WhatsApp number (01XXXXXXXXX)..." required style="flex:1; padding:8px 12px; font-size:13px; border-radius:6px; border:1px solid #CBD5E1;">
+    <button type="submit" class="btn sm ok">Link WhatsApp</button>
+  </form>
+  <div style="margin-top:12px; background:#FFFFFF; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:12px; color:#166534; line-height:1.5;">
+    💡 <strong>অ্যাডমিন নোট:</strong> কাস্টমার শেষ মেসেজ পাঠানোর ২৪ ঘণ্টা পর্যন্ত সম্পূর্ণ ফ্রিতে সরাসরি কাস্টম মেসেজ দেওয়া যায়। অর্ডারের স্ট্যাটাস পরিবর্তন করলেই (পেমেন্ট অ্যাপ্রুভ, প্যাকেজিং, গেট-আউট/ডেলিভারি) কাস্টমারের হোয়াটসঅ্যাপে লাইভ ট্র্যাকিং অ্যালার্ট পৌঁছে যাবে।
+  </div>
+</div>
+
+<!-- Android Phone SMS Gateway (Airtel SIM) Connection Card -->
+<div class="panel" style="border:1px solid #FED7AA; background:#FFF7ED; margin-top:16px;">
+  <h3 style="display:flex; align-items:center; gap:8px; margin-top:0; color:#9A3412;">
+    📱 Android SMS Gateway (Airtel SIM) Tracking & Auto-Alerts
+  </h3>
+  <div class="kv">
+    <div>Gateway Channel</div>
+    <div>
+      <span class="pill" style="background:#FFEDD5; color:#C2410C; font-weight:800; font-size:12px;">
+        📶 Airtel SIM (Local Android Device)
+      </span>
+    </div>
+    <div>Customer Mobile</div>
+    <div>
+      <code style="font-size:14px; font-weight:700; background:#FFEDD5; color:#9A3412; padding:2px 8px; border-radius:4px;">
+        {{ o.mobile_number }}
+      </code>
+    </div>
+    <div>Auto-Dispatch Alert</div>
+    <div>
+      <span class="pill" style="background:#FEF3C7; color:#92400E; font-size:11px; font-weight:700;">
+        ⚡ Auto-Triggers on Payment, Pack, Dispatch & Delivery
+      </span>
+    </div>
+  </div>
+  <div class="actions" style="margin-top:12px;">
+    <form method="post" action="{{ url_for('main.admin_order_sms_test', order_id=o.id) }}" style="display:inline;">
+      <button type="submit" class="btn sm orange">
+        📱 Send Test SMS via Airtel SIM
+      </button>
+    </form>
+    <a href="{{ url_for('main.admin_messenger', channel='sms', phone=o.mobile_number) }}" class="btn sm gray" style="text-decoration:none;">
+      📋 View SMS Logs & Gateway Hub
+    </a>
+  </div>
+  <div style="margin-top:12px; background:#FFFFFF; border:1px solid #FED7AA; border-radius:8px; padding:10px 14px; font-size:12px; color:#9A3412; line-height:1.5;">
+    💡 <strong>এয়ারটেল সিম গেটওয়ে নোট:</strong> আপনার অ্যান্ড্রয়েড ফোনে <em>Android SMS Gateway</em> বা <em>SMS Gateway API</em> অ্যাপটি রানিং থাকলে এই বাটন চাপামাত্রই কাস্টমারের নম্বরে (<code>{{ o.mobile_number }}</code>) আপনার এয়ারটেল সিম থেকে সরাসরি অফিসিয়াল ট্র্যাকিং এসএমএস চলে যাবে।
+  </div>
+</div>
+
+<!-- Stage 1 Action Panel: Payment Verification -->
+<div class="panel">
+  <h3>⚡ 1. Payment Verification</h3>
+  {% if o.payment_method == 'cod' and not o.transaction_id %}
+    <div class="kv">
+      <div>Method</div><div><b>Cash on Delivery (COD)</b></div>
+      <div>Total Payable on Delivery</div><div><b style="color:var(--admin-navy); font-size:16px;">৳{{ '%.0f'|format(o.total_amount) }}</b></div>
+      <div>Verification Status</div><div><span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:800;">COD Confirmed</span></div>
+    </div>
+    <p style="font-size:13.5px; color:#059669; font-weight:600; margin-top:8px;">
+      ✅ COD order is confirmed and automatically verified for packaging.
+    </p>
+  {% elif o.transaction_id %}
+    <div class="kv">
+      <div>bKash Number</div><div>{{ o.bkash_number }}</div>
+      <div>TrxID</div><div><code style="font-size:16px; font-weight:800; background:#F1F5F9; padding:2px 8px; border-radius:4px;">{{ o.transaction_id }}</code></div>
+      <div>Amount Due</div><div>৳{{ '%.0f'|format(o.amount or o.total_amount) }}</div>
+      <div>Verification Status</div><div><span class="pill {{ o.verification_status|lower }}">{{ o.verification_status }}</span></div>
+      {% if o.admin_notes %}<div>Admin Note</div><div>{{ o.admin_notes }}</div>{% endif %}
+    </div>
+    {% if o.verification_status == 'Pending' %}
+    <form method="post" action="{{ url_for('main.admin_payment', order_id=o.id) }}" style="margin-top:12px; background:#FFFBEB; padding:14px; border-radius:8px; border:1px solid #FDE68A;">
+      <label style="font-weight:700; font-size:13px;">Admin Verification Note (Optional)</label>
+      <input name="admin_notes" maxlength="255" placeholder="e.g. Verified with bKash merchant statement">
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn ok" name="action" value="approve">✓ Approve Payment (Move to Packaging)</button>
+        <button class="btn bad" name="action" value="reject">✕ Reject Payment</button>
+      </div>
+    </form>
+    {% elif o.verification_status == 'Approved' %}
+    <div class="actions" style="margin-top:10px;">
+      <a class="btn ok sm" target="_blank" href="{{ msgs.approved.wa }}">WhatsApp: Payment Verified</a>
+      <a class="btn gray sm" href="{{ msgs.approved.sms }}">SMS: Payment Verified</a>
+    </div>
+    {% else %}
+    <div class="actions" style="margin-top:10px;">
+      <a class="btn bad sm" target="_blank" href="{{ msgs.rejected.wa }}">WhatsApp: Payment Rejected</a>
+      <a class="btn gray sm" href="{{ msgs.rejected.sms }}">SMS: Payment Rejected</a>
+    </div>
+    {% endif %}
+  {% else %}
+    <p class="muted">Awaiting bKash Send Money payment submission from customer.</p>
+    <div class="actions">
+      <a class="btn ok sm" target="_blank" href="{{ msgs.reminder.wa }}">WhatsApp: Payment Reminder</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Stage 2 & 3 Action Panel: Packaging & Gate Out -->
+{% if o.status in ('Payment Verified', 'Packaging') or (o.status == 'Order Placed' and o.payment_method == 'cod') %}
+<div class="panel" style="border-left:4px solid #2563EB;">
+  <h3>📦 2 & 3. Packaging & Gate Out Delivery Dispatch</h3>
+  
+  {% if o.status != 'Packaging' %}
+  <!-- Step 2: Mark Packaged -->
+  <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:14px; margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        <strong style="color:#1E40AF; font-size:15px;">Step 2: Pack the shoes into box</strong>
+        <div style="font-size:12.5px; color:#3B82F6;">Attach shipping label and move order to Gate Out queue.</div>
+      </div>
+      <form method="post" action="{{ url_for('main.admin_pack', order_id=o.id) }}">
+        <button class="btn-save" type="submit" style="background:#2563EB; padding:8px 16px; font-size:13.5px;">
+          📦 Mark as Packaged & Ready for Gate Out
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:8px; padding:12px; margin-bottom:16px; color:#065F46;">
+    <strong>✅ Packaging Complete!</strong> Shoes are boxed with shipping label and awaiting courier rider at dispatch gate.
+    <div style="margin-top:8px;">
+      <a class="btn sm ok" target="_blank" href="{{ msgs.packaged.wa }}">WhatsApp: Shoes Packaged Notification</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Step 3: Gate Out Handover to Courier -->
+  <form method="post" action="{{ url_for('main.admin_dispatch', order_id=o.id) }}">
+    <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--admin-navy);">🚪 Gate Out Handover to Courier</h4>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700;">Select Courier Partner *</label>
+        <select name="courier" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--admin-border, #CBD5E1);">
+          {% for c in couriers %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700;">Consignment / Tracking ID (Optional)</label>
+        <input name="consignment_id" placeholder="e.g. STEAD-98765" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--admin-border, #CBD5E1);">
+      </div>
+    </div>
+    <button class="btn navy" style="padding:9px 18px; font-size:14px;">🚪 Gate Out: Handover to Courier & Mark Out for Delivery</button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Stage 4: Out for Delivery / In Transit -->
+{% if o.status == 'Out for Delivery' %}
+<div class="panel" style="border-left:4px solid #0D9488;">
+  <h3>🚚 4. In Transit / Out for Delivery</h3>
+  <div class="kv">
+    <div>Courier Partner</div><div><strong>{{ o.courier_name or 'Courier Service' }}</strong></div>
+    <div>Consignment / Tracking</div><div><code>{{ o.consignment_id or '—' }}</code></div>
+    <div>Status</div><div><span class="pill out-for-delivery">Out for Delivery</span></div>
+  </div>
+  
+  <div class="actions" style="margin-top:14px;">
+    <a class="btn ok sm" target="_blank" href="{{ msgs.delivery.wa }}">WhatsApp: Out for Delivery Alert</a>
+    <a class="btn gray sm" href="{{ msgs.delivery.sms }}">SMS: Out for Delivery Alert</a>
+  </div>
+
+  <div style="margin-top:16px; padding-top:14px; border-top:1px dashed #CBD5E1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+      <strong>Courier confirmed parcel is delivered to customer?</strong>
+      <div style="font-size:12px; color:var(--admin-muted);">Mark as delivered to prompt customer for feedback.</div>
+    </div>
+    <form method="post" action="{{ url_for('main.admin_received', order_id=o.id) }}">
+      <button class="btn ok" type="submit" style="padding:9px 18px;">✅ Mark as Delivered (Received)</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stage 5: Feedback & Close Order -->
+{% if o.status in ('Received', 'Completed') %}
+<div class="panel" style="border-left:4px solid #059669;">
+  <h3>💬 5 & 6. Customer Feedback & Order Closure</h3>
+  <div class="kv">
+    <div>Delivery Status</div><div><span class="pill received">Delivered / Received</span></div>
+    <div>Customer Feedback</div>
+    <div>
+      {% if o.feedback_id %}
+      <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:700;">⭐️ Review Submitted</span>
+      {% else %}
+      <span class="pill" style="background:#FEF3C7; color:#92400E; font-weight:700;">Feedback Pending</span>
+      {% endif %}
+    </div>
+    <div>Final Status</div><div><span class="pill {{ o.status|lower|replace(' ','-') }}">{{ o.status }}</span></div>
+  </div>
+
+  <div class="actions" style="margin-top:14px;">
+    <a class="btn ok sm" target="_blank" href="{{ msgs.received.wa }}">WhatsApp: Request Feedback & Review</a>
+  </div>
+
+  {% if o.status != 'Completed' %}
+  <div style="margin-top:16px; padding-top:14px; border-top:1px dashed #CBD5E1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+      <strong>Order Delivered & Verified?</strong>
+      <div style="font-size:12px; color:var(--admin-muted);">Close this order and move it to Completed list.</div>
+    </div>
+    <form method="post" action="{{ url_for('main.admin_complete', order_id=o.id) }}">
+      <button class="btn-save" type="submit" style="background:#059669; padding:9px 20px;">
+        🏁 Verify & Close Order as Completed
+      </button>
+    </form>
+  </div>
+  {% else %}
+  <div style="margin-top:14px; padding:12px; background:#ECFDF5; border-radius:8px; color:#065F46; font-weight:700;">
+    ✅ This order is fully completed and closed.
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Order Tracking Audit Timeline -->
+{% if events %}
+<div class="panel">
+  <h3>📜 Event Audit Log</h3>
+  <div class="timeline-items-wrap" style="display:flex; flex-direction:column; gap:8px;">
+    {% for ev in events %}
+    <div style="display:flex; align-items:baseline; gap:12px; padding:6px 0; border-bottom:1px solid #F1F5F9;">
+      <span style="font-size:11px; font-weight:700; color:var(--admin-muted); width:110px; flex-shrink:0;">
+        {{ ev.created_at }}
+      </span>
+      <span class="pill {{ ev.event_type }}" style="font-size:11px; padding:2px 8px;">
+        {{ ev.event_type }}
+      </span>
+      <span style="font-size:13px; color:var(--admin-navy);">
+        {{ ev.detail }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if can_cancel %}
+<div class="panel" style="border:1px solid #FECACA; background:#FEF2F2;">
+  <h3 style="color:#B91C1C;">Cancel Order</h3>
+  <form method="post" action="{{ url_for('main.admin_cancel', order_id=o.id) }}">
+    <label style="color:#7F1D1D; font-size:12px; font-weight:700;">Reason for Cancellation</label>
+    <input name="reason" placeholder="e.g. Customer requested cancellation / Wrong size" style="margin-bottom:10px;">
+    <button class="btn bad" type="submit">Cancel Order</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

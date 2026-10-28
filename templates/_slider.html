@@ -1,0 +1,21 @@
+<div class="slider">
+  {% if p.old_price and p.old_price > p.price %}
+  {% set pct = ((p.old_price - p.price) / p.old_price * 100)|round|int %}
+  <div class="discount-flag">🔥 {{ pct }}% OFF</div>
+  {% endif %}
+  {% if p.is_free_delivery %}
+  <div class="free-delivery-flag bkash-flag">
+    <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" class="flag-bkash-img">
+    <span>ফ্রি ডেলিভারি</span>
+  </div>
+  {% endif %}
+  <div class="slide-items">
+    <img src="{{ url_for('static', filename=p.image_1) }}" alt="{{ p.title }}" data-zoom-src="{{ url_for('static', filename=p.image_1) }}">
+    {% if p.image_2 %}<img src="{{ url_for('static', filename=p.image_2) }}" alt="{{ p.title }}" data-zoom-src="{{ url_for('static', filename=p.image_2) }}">{% endif %}
+    {% if p.image_3 %}<img src="{{ url_for('static', filename=p.image_3) }}" alt="{{ p.title }}" data-zoom-src="{{ url_for('static', filename=p.image_3) }}">{% endif %}
+    {% if p.video_url %}<video src="{{ url_for('static', filename=p.video_url) }}" muted loop playsinline preload="metadata"></video>{% endif %}
+  </div>
+  <button type="button" class="nav-arrow prev" aria-label="Previous image">&lsaquo;</button>
+  <button type="button" class="nav-arrow next" aria-label="Next image">&rsaquo;</button>
+  <div class="dots"></div>
+</div>

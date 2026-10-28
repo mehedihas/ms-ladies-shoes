@@ -1,0 +1,1149 @@
+{% extends 'base.html' %}
+{% block title %}Meta Omnichannel Hub: Messenger & WhatsApp Cloud API - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="admin-header" style="margin-bottom:20px;">
+  <div class="admin-title-group">
+    <div class="admin-breadcrumb">
+      <a href="{{ url_for('main.admin_dashboard') }}">&larr; Dashboard</a> / Meta Messaging Omnichannel Hub
+    </div>
+    <h1 style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+      <span style="display:inline-flex; gap:6px; align-items:center;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#0084FF">
+          <path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.208V22l3.373-1.851c.913.253 1.884.391 2.892.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.042 12.443l-2.55-2.721-4.975 2.721 5.474-5.814 2.613 2.721 4.912-2.721-5.474 5.814z"/>
+        </svg>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#25D366">
+          <path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.97.57 3.805 1.554 5.352L2.094 22l4.757-1.428A10.007 10.007 0 0 0 12.031 22C17.568 22 22 17.505 22 12.031 22 6.495 17.568 2 12.031 2zm5.748 14.156c-.24.673-1.393 1.288-1.922 1.344-.504.053-1.127.078-3.414-.863-2.716-1.117-4.48-3.865-4.615-4.045-.135-.18-1.096-1.457-1.096-2.778 0-1.32.69-1.969.936-2.235.24-.265.527-.33.703-.33.176 0 .352.003.504.01.164.009.384-.062.6.457.224.536.764 1.86.83 1.996.067.135.11.293.02.473-.09.18-.135.293-.27.45-.135.158-.284.352-.405.473-.135.135-.277.283-.12.553.158.27 1.053 1.733 2.26 2.808 1.554 1.383 2.862 1.81 3.268 1.978.406.168.644.14.884-.135.24-.275 1.026-1.196 1.302-1.606.276-.41.553-.342.928-.204.375.137 2.38 1.123 2.787 1.326.406.204.676.305.776.474.1.17.1.984-.14 1.657z"/>
+        </svg>
+      </span>
+      Meta Messenger & WhatsApp Cloud API Hub
+    </h1>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <!-- Messenger Status -->
+    {% if settings.messenger_enabled == '1' and settings.messenger_page_token %}
+    <span class="smart-live-badge" style="background:#EFF6FF; color:#1D4ED8; border-color:#BFDBFE;">
+      <span class="smart-live-dot" style="background:#0084FF;"></span>
+      Messenger Active
+    </span>
+    {% else %}
+    <span class="smart-live-badge" style="background:#F1F5F9; color:#64748B; border-color:#CBD5E1;">
+      Messenger Inactive
+    </span>
+    {% endif %}
+
+    <!-- WhatsApp Cloud API Status -->
+    {% if settings.whatsapp_enabled == '1' and settings.whatsapp_access_token and settings.whatsapp_phone_number_id %}
+    <span class="smart-live-badge" style="background:#DCFCE7; color:#15803D; border-color:#86EFAC;">
+      <span class="smart-live-dot" style="background:#25D366;"></span>
+      WhatsApp Cloud API Active
+    </span>
+    {% else %}
+    <span class="smart-live-badge" style="background:#FEF3C7; color:#92400E; border-color:#FDE68A;">
+      ⚠️ WhatsApp Setup Needed
+    </span>
+    {% endif %}
+
+    <!-- Android SMS Gateway Status -->
+    {% if settings.sms_enabled == '1' and settings.sms_gateway_url %}
+    <span class="smart-live-badge" style="background:#FEF2F2; color:#B91C1C; border-color:#FECACA;">
+      <span class="smart-live-dot" style="background:#EF4444;"></span>
+      {{ settings.sms_sim_operator or 'Airtel' }} SMS Active
+    </span>
+    {% else %}
+    <span class="smart-live-badge" style="background:#F1F5F9; color:#64748B; border-color:#CBD5E1;">
+      SMS Inactive
+    </span>
+    {% endif %}
+
+    <a href="{{ url_for('main.admin_dashboard') }}" class="btn sm navy" style="text-decoration:none;">
+      Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Tabs Toggle Header -->
+<div style="display:flex; gap:8px; border-bottom:2px solid #E2E8F0; margin-bottom:22px; flex-wrap:wrap;">
+  <button id="tabBtnMessenger" onclick="switchTab('messenger')" class="smart-tab-item {{ 'active' if channel == 'messenger' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#0084FF"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.208V22l3.373-1.851c.913.253 1.884.391 2.892.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.042 12.443l-2.55-2.721-4.975 2.721 5.474-5.814 2.613 2.721 4.912-2.721-5.474 5.814z"/></svg>
+    <span>Facebook Messenger ({{ contacts|length }})</span>
+  </button>
+
+  <button id="tabBtnWhatsApp" onclick="switchTab('whatsapp')" class="smart-tab-item {{ 'active' if channel == 'whatsapp' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.97.57 3.805 1.554 5.352L2.094 22l4.757-1.428A10.007 10.007 0 0 0 12.031 22C17.568 22 22 17.505 22 12.031 22 6.495 17.568 2 12.031 2zm5.748 14.156c-.24.673-1.393 1.288-1.922 1.344-.504.053-1.127.078-3.414-.863-2.716-1.117-4.48-3.865-4.615-4.045-.135-.18-1.096-1.457-1.096-2.778 0-1.32.69-1.969.936-2.235.24-.265.527-.33.703-.33.176 0 .352.003.504.01.164.009.384-.062.6.457.224.536.764 1.86.83 1.996.067.135.11.293.02.473-.09.18-.135.293-.27.45-.135.158-.284.352-.405.473-.135.135-.277.283-.12.553.158.27 1.053 1.733 2.26 2.808 1.554 1.383 2.862 1.81 3.268 1.978.406.168.644.14.884-.135.24-.275 1.026-1.196 1.302-1.606.276-.41.553-.342.928-.204.375.137 2.38 1.123 2.787 1.326.406.204.676.305.776.474.1.17.1.984-.14 1.657z"/></svg>
+    <span>WhatsApp Business Cloud ({{ wa_contacts|length }})</span>
+  </button>
+
+  <button id="tabBtnMessengerSettings" onclick="switchTab('settings')" class="smart-tab-item {{ 'active' if channel == 'settings' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer;">
+    ⚙️ Messenger API Settings
+  </button>
+
+  <button id="tabBtnWASettings" onclick="switchTab('wa_settings')" class="smart-tab-item {{ 'active' if channel == 'wa_settings' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer;">
+    ⚙️ WhatsApp Cloud API Settings
+  </button>
+
+  <button id="tabBtnSMS" onclick="switchTab('sms')" class="smart-tab-item {{ 'active' if channel == 'sms' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#EF4444"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/></svg>
+    <span>📱 Android SMS Gateway (Airtel) ({{ sms_logs|length }})</span>
+  </button>
+
+  <button id="tabBtnAdminNotes" onclick="switchTab('admin_notes')" class="smart-tab-item {{ 'active' if channel == 'admin_notes' else '' }}" style="border-radius:8px 8px 0 0; border-bottom:none; cursor:pointer; background:#FFFBEB; border-color:#FDE68A; color:#92400E; font-weight:800; display:flex; align-items:center; gap:6px;">
+    <span>📖 Admin Notes &amp; Guidelines (জরুরি নিয়মাবলি)</span>
+  </button>
+</div>
+
+<!-- =========================================================================
+     TAB 1: FACEBOOK MESSENGER LIVE CHAT INBOX
+     ========================================================================= -->
+<div id="tabContentMessenger" style="{{ 'display:block;' if channel == 'messenger' else 'display:none;' }}">
+  <div style="display:grid; grid-template-columns:320px 1fr; gap:18px; min-height:550px;">
+    
+    <!-- Contacts Sidebar -->
+    <div class="form-card" style="padding:14px; display:flex; flex-direction:column; height:600px; overflow:hidden;">
+      <div style="font-weight:800; font-size:14px; margin-bottom:12px; color:var(--admin-navy); display:flex; justify-content:space-between; align-items:center;">
+        <span>Messenger Conversations</span>
+        <span class="smart-tab-badge">{{ contacts|length }}</span>
+      </div>
+
+      <div style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px;">
+        {% for c in contacts %}
+        <a href="{{ url_for('main.admin_messenger', channel='messenger', psid=c.psid) }}" style="display:block; padding:10px 12px; border-radius:10px; text-decoration:none; color:inherit; background:{{ '#EFF6FF' if c.psid == active_psid else '#FFFFFF' }}; border:1px solid {{ '#BFDBFE' if c.psid == active_psid else '#E2E8F0' }}; transition:all 0.15s;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong style="font-size:13px; color:{{ '#1D4ED8' if c.psid == active_psid else '#0F172A' }};">
+              {{ c.customer_name or ('Customer ' + c.psid[:8]) }}
+            </strong>
+            <span style="font-size:10px; color:#94A3B8;">
+              {{ c.last_message_at.strftime('%H:%M') if c.last_message_at else '' }}
+            </span>
+          </div>
+
+          <div style="font-size:11.5px; color:#64748B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
+            {{ c.last_message_text or 'No messages yet' }}
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            {% if c.linked_order_id %}
+            <span class="pill" style="font-size:10px; padding:2px 6px; background:#DCFCE7; color:#15803D; font-weight:700;">
+              Order #{{ c.linked_order_id }} ({{ c.order_status }})
+            </span>
+            {% else %}
+            <span class="pill" style="font-size:10px; padding:2px 6px; background:#F1F5F9; color:#64748B;">
+              No Order Linked
+            </span>
+            {% endif %}
+          </div>
+        </a>
+        {% else %}
+        <div style="text-align:center; padding:50px 14px; color:var(--admin-muted); font-size:13px;">
+          <div style="font-size:32px; margin-bottom:8px;">💬</div>
+          No Messenger messages yet.<br>
+          When customers message your Facebook page, they will appear here automatically!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Active Conversation View -->
+    <div class="form-card" style="padding:0; display:flex; flex-direction:column; height:600px; overflow:hidden;">
+      {% if active_contact %}
+      <!-- Thread Header -->
+      <div style="padding:14px 20px; border-bottom:1px solid #E2E8F0; background:#F8FAFC; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-size:16px; font-weight:800; color:#0F172A; display:flex; align-items:center; gap:8px;">
+            <span>{{ active_contact.customer_name or 'Messenger User' }}</span>
+            <code style="font-size:11px; background:#E2E8F0; padding:2px 6px; border-radius:4px; font-weight:600;">PSID: {{ active_contact.psid }}</code>
+          </div>
+          {% if active_contact.linked_order_id %}
+          <div style="font-size:12.5px; color:#059669; font-weight:700; margin-top:2px;">
+            ✅ Linked to Order #{{ active_contact.linked_order_id }} ({{ active_contact.product_title }} - Size {{ active_contact.shoe_size }}) &middot; Status: {{ active_contact.order_status }}
+          </div>
+          {% else %}
+          <div style="font-size:12px; color:#D97706; margin-top:2px;">
+            ⚠️ Not linked to an order yet. Choose an order below to link.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Order Link Dropdown -->
+        <div style="display:flex; align-items:center; gap:8px;">
+          {% if active_contact.linked_order_id %}
+          <a href="{{ url_for('main.admin_order', order_id=active_contact.linked_order_id) }}" class="btn sm navy" style="text-decoration:none;">
+            View Order #{{ active_contact.linked_order_id }}
+          </a>
+          {% endif %}
+
+          <form method="post" action="{{ url_for('main.admin_messenger_link_order', psid=active_psid) }}" style="display:flex; gap:6px;">
+            <select name="order_id" style="padding:6px; font-size:12px; border-radius:6px; border:1px solid #CBD5E1;">
+              <option value="">Link to Order...</option>
+              {% for ord in recent_orders %}
+              <option value="{{ ord.id }}" {{ 'selected' if ord.id == active_contact.linked_order_id else '' }}>
+                #{{ ord.id }} - {{ ord.customer_name }} ({{ ord.product_sku }})
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn sm navy" style="padding:6px 10px; font-size:12px;">Link</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div style="flex:1; padding:20px; overflow-y:auto; background:#F8FAFC; display:flex; flex-direction:column; gap:12px;">
+        {% for m in messages %}
+        {% if m.direction == 'inbound' %}
+        <div style="display:flex; align-items:flex-end; gap:8px; max-width:70%;">
+          <div style="width:28px; height:28px; border-radius:50%; background:#0084FF; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0;">
+            C
+          </div>
+          <div>
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:10px 14px; border-radius:14px 14px 14px 2px; color:#1E293B; font-size:13.5px; line-height:1.45; box-shadow:0 1px 3px rgba(0,0,0,0.05); white-space:pre-wrap;">{{ m.message_text }}</div>
+            <div style="font-size:10px; color:#94A3B8; margin-top:2px; margin-left:4px;">{{ m.created_at.strftime('%d %b %H:%M') if m.created_at else '' }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div style="display:flex; align-items:flex-end; gap:8px; justify-content:flex-end; max-width:75%; margin-left:auto;">
+          <div>
+            <div style="background:linear-gradient(135deg, #0084FF 0%, #0066CC 100%); color:#FFFFFF; padding:10px 14px; border-radius:14px 14px 2px 14px; font-size:13.5px; line-height:1.45; box-shadow:0 2px 6px rgba(0,132,255,0.25); white-space:pre-wrap;">{{ m.message_text }}</div>
+            <div style="font-size:10px; color:#94A3B8; margin-top:2px; text-align:right; margin-right:4px;">{{ m.created_at.strftime('%d %b %H:%M') if m.created_at else '' }} &middot; Sent via Meta API</div>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; background:#0F172A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0;">MS</div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align:center; padding:60px 20px; color:var(--admin-muted);">
+          No message history for this contact. Type below to send the first message!
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Reply Box -->
+      <div style="padding:14px 20px; border-top:1px solid #E2E8F0; background:#FFFFFF;">
+        <form method="post" action="{{ url_for('main.admin_messenger_send', psid=active_psid) }}">
+          <div style="display:flex; gap:10px;">
+            <textarea name="message_text" required rows="2" placeholder="Write a message to send directly to customer's Facebook Messenger..." style="flex:1; padding:10px 14px; border:1px solid #CBD5E1; border-radius:8px; font-size:13.5px; resize:none;"></textarea>
+            <button type="submit" class="btn-save" style="background:#0084FF; padding:0 20px; font-size:14px; align-self:stretch;">
+              Send ➔
+            </button>
+          </div>
+          <div style="font-size:11.5px; color:#64748B; margin-top:6px;">
+            💡 Messages sent here are delivered instantly to the customer's Facebook Messenger app via Meta Graph API.
+          </div>
+        </form>
+      </div>
+
+      {% else %}
+      <div style="text-align:center; padding:100px 20px; color:var(--admin-muted);">
+        <div style="font-size:48px; margin-bottom:12px;">💬</div>
+        <strong style="font-size:16px; color:#1E293B;">Select a conversation from the sidebar</strong>
+        <p style="font-size:13.5px; margin-top:6px;">View live messages, link orders, and reply directly to customers.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 2: WHATSAPP BUSINESS CLOUD API LIVE CHAT INBOX
+     ========================================================================= -->
+<div id="tabContentWhatsApp" style="{{ 'display:block;' if channel == 'whatsapp' else 'display:none;' }}">
+  <div style="display:grid; grid-template-columns:320px 1fr; gap:18px; min-height:550px;">
+    
+    <!-- WhatsApp Contacts Sidebar -->
+    <div class="form-card" style="padding:14px; display:flex; flex-direction:column; height:600px; overflow:hidden;">
+      <div style="font-weight:800; font-size:14px; margin-bottom:12px; color:var(--admin-navy); display:flex; justify-content:space-between; align-items:center;">
+        <span>WhatsApp Conversations</span>
+        <span class="smart-tab-badge" style="background:#DCFCE7; color:#15803D;">{{ wa_contacts|length }}</span>
+      </div>
+
+      <div style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px;">
+        {% for c in wa_contacts %}
+        <a href="{{ url_for('main.admin_messenger', channel='whatsapp', wa_id=c.wa_id) }}" style="display:block; padding:10px 12px; border-radius:10px; text-decoration:none; color:inherit; background:{{ '#F0FDF4' if c.wa_id == active_wa_id else '#FFFFFF' }}; border:1px solid {{ '#86EFAC' if c.wa_id == active_wa_id else '#E2E8F0' }}; transition:all 0.15s;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong style="font-size:13px; color:{{ '#15803D' if c.wa_id == active_wa_id else '#0F172A' }};">
+              {{ c.customer_name or c.order_customer_name or ('+' + c.wa_id) }}
+            </strong>
+            <span style="font-size:10px; color:#94A3B8;">
+              {{ c.last_message_at.strftime('%H:%M') if c.last_message_at else '' }}
+            </span>
+          </div>
+
+          <div style="font-size:11.5px; color:#64748B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px;">
+            {{ c.last_message_text or 'No messages yet' }}
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            {% if c.linked_order_id %}
+            <span class="pill" style="font-size:10px; padding:2px 6px; background:#DCFCE7; color:#15803D; font-weight:700;">
+              Order #{{ c.linked_order_id }} ({{ c.order_status }})
+            </span>
+            {% else %}
+            <span class="pill" style="font-size:10px; padding:2px 6px; background:#F1F5F9; color:#64748B;">
+              No Order Linked
+            </span>
+            {% endif %}
+            <span style="font-size:10px; color:#64748B; font-family:monospace;">{{ c.wa_id }}</span>
+          </div>
+        </a>
+        {% else %}
+        <div style="text-align:center; padding:50px 14px; color:var(--admin-muted); font-size:13px;">
+          <div style="font-size:32px; margin-bottom:8px;">🟢</div>
+          No WhatsApp messages yet.<br>
+          When customers message your WhatsApp Business Number, they will appear here live!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Active WhatsApp Conversation View -->
+    <div class="form-card" style="padding:0; display:flex; flex-direction:column; height:600px; overflow:hidden;">
+      {% if active_wa_contact %}
+      <!-- Thread Header -->
+      <div style="padding:14px 20px; border-bottom:1px solid #E2E8F0; background:#F0FDF4; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-size:16px; font-weight:800; color:#0F172A; display:flex; align-items:center; gap:8px;">
+            <span>{{ active_wa_contact.customer_name or active_wa_contact.order_customer_name or 'WhatsApp Customer' }}</span>
+            <code style="font-size:12px; background:#DCFCE7; color:#15803D; padding:2px 8px; border-radius:4px; font-weight:700;">+{{ active_wa_contact.wa_id }}</code>
+          </div>
+          {% if active_wa_contact.linked_order_id %}
+          <div style="font-size:12.5px; color:#059669; font-weight:700; margin-top:2px;">
+            ✅ Linked to Order #{{ active_wa_contact.linked_order_id }} ({{ active_wa_contact.product_title }} - Size {{ active_wa_contact.shoe_size }}) &middot; Status: {{ active_wa_contact.order_status }}
+          </div>
+          {% else %}
+          <div style="font-size:12px; color:#D97706; margin-top:2px;">
+            ⚠️ Not linked to an order yet. Select an order below to link.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Order Link Dropdown -->
+        <div style="display:flex; align-items:center; gap:8px;">
+          {% if active_wa_contact.linked_order_id %}
+          <a href="{{ url_for('main.admin_order', order_id=active_wa_contact.linked_order_id) }}" class="btn sm navy" style="text-decoration:none;">
+            View Order #{{ active_wa_contact.linked_order_id }}
+          </a>
+          {% endif %}
+
+          <form method="post" action="{{ url_for('main.admin_whatsapp_link_order', wa_id=active_wa_id) }}" style="display:flex; gap:6px;">
+            <select name="order_id" style="padding:6px; font-size:12px; border-radius:6px; border:1px solid #CBD5E1;">
+              <option value="">Link to Order...</option>
+              {% for ord in recent_orders %}
+              <option value="{{ ord.id }}" {{ 'selected' if ord.id == active_wa_contact.linked_order_id else '' }}>
+                #{{ ord.id }} - {{ ord.customer_name }} ({{ ord.product_sku }})
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn sm navy" style="padding:6px 10px; font-size:12px;">Link</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div style="flex:1; padding:20px; overflow-y:auto; background:#F8FAFC; display:flex; flex-direction:column; gap:12px;">
+        {% for m in wa_messages %}
+        {% if m.direction == 'inbound' %}
+        <!-- Inbound Customer WhatsApp Message -->
+        <div style="display:flex; align-items:flex-end; gap:8px; max-width:70%;">
+          <div style="width:28px; height:28px; border-radius:50%; background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0;">
+            WA
+          </div>
+          <div>
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:10px 14px; border-radius:14px 14px 14px 2px; color:#1E293B; font-size:13.5px; line-height:1.45; box-shadow:0 1px 3px rgba(0,0,0,0.05); white-space:pre-wrap;">{{ m.message_text }}</div>
+            <div style="font-size:10px; color:#94A3B8; margin-top:2px; margin-left:4px;">{{ m.created_at.strftime('%d %b %H:%M') if m.created_at else '' }}</div>
+          </div>
+        </div>
+        {% else %}
+        <!-- Outbound WhatsApp Message -->
+        <div style="display:flex; align-items:flex-end; gap:8px; justify-content:flex-end; max-width:75%; margin-left:auto;">
+          <div>
+            <div style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFFFFF; padding:10px 14px; border-radius:14px 14px 2px 14px; font-size:13.5px; line-height:1.45; box-shadow:0 2px 6px rgba(16,185,129,0.25); white-space:pre-wrap;">{{ m.message_text }}</div>
+            <div style="font-size:10px; color:#94A3B8; margin-top:2px; text-align:right; margin-right:4px;">{{ m.created_at.strftime('%d %b %H:%M') if m.created_at else '' }} &middot; Sent via WhatsApp Cloud API</div>
+          </div>
+          <div style="width:28px; height:28px; border-radius:50%; background:#0F172A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0;">MS</div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align:center; padding:60px 20px; color:var(--admin-muted);">
+          No message history for this WhatsApp contact. Type below to send a message!
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Reply Box -->
+      <div style="padding:14px 20px; border-top:1px solid #E2E8F0; background:#FFFFFF;">
+        <form method="post" action="{{ url_for('main.admin_whatsapp_send', wa_id=active_wa_id) }}">
+          <div style="display:flex; gap:10px;">
+            <textarea name="message_text" required rows="2" placeholder="Write a message to send directly to customer's WhatsApp..." style="flex:1; padding:10px 14px; border:1px solid #CBD5E1; border-radius:8px; font-size:13.5px; resize:none;"></textarea>
+            <button type="submit" class="btn-save" style="background:#15803D; padding:0 20px; font-size:14px; align-self:stretch;">
+              Send WhatsApp ➔
+            </button>
+          </div>
+          <div style="font-size:11.5px; color:#64748B; margin-top:6px;">
+            💡 Delivered instantly to the customer's WhatsApp application using Meta WhatsApp Cloud API within the 24-hour service conversation window.
+          </div>
+        </form>
+      </div>
+
+      {% else %}
+      <div style="text-align:center; padding:100px 20px; color:var(--admin-muted);">
+        <div style="font-size:48px; margin-bottom:12px;">🟢</div>
+        <strong style="font-size:16px; color:#1E293B;">Select a WhatsApp conversation from the sidebar</strong>
+        <p style="font-size:13.5px; margin-top:6px;">View live messages, link orders, and reply directly to WhatsApp users.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 3: META MESSENGER SETTINGS
+     ========================================================================= -->
+<div id="tabContentSettings" style="{{ 'display:block;' if channel == 'settings' else 'display:none;' }}">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    
+    <!-- Settings Form -->
+    <div class="form-card" style="padding:24px;">
+      <h3 style="margin-top:0; margin-bottom:16px; font-size:18px; color:var(--admin-navy); display:flex; align-items:center; gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#0084FF"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.914 1.455 5.518 3.735 7.208V22l3.373-1.851c.913.253 1.884.391 2.892.391 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.042 12.443l-2.55-2.721-4.975 2.721 5.474-5.814 2.613 2.721 4.912-2.721-5.474 5.814z"/></svg>
+        Meta Messenger Configuration
+      </h3>
+
+      <form method="post" action="{{ url_for('main.admin_messenger_settings') }}">
+        
+        <!-- Toggle Enabled -->
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:14.5px; color:#0F172A; display:block;">Enable Messenger Integration</strong>
+            <span style="font-size:12px; color:#64748B;">Activate live webhook message receiving & automatic order status updates</span>
+          </div>
+          <input type="checkbox" name="messenger_enabled" value="1" {{ 'checked' if settings.messenger_enabled == '1' else '' }} style="width:20px; height:20px; accent-color:#0084FF;">
+        </div>
+
+        <!-- Page Access Token -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            Page Access Token (Meta Graph API) <span class="required-star">*</span>
+          </label>
+          <textarea name="messenger_page_token" rows="3" placeholder="Paste your Facebook Page Access Token here (starts with EAAB...)" style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:13px; font-family:monospace;">{{ settings.messenger_page_token or '' }}</textarea>
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Generated from Meta Developer App &gt; Messenger &gt; API Setup &gt; Generate Token.
+          </div>
+        </div>
+
+        <!-- Webhook Verify Token -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            Webhook Verify Token <span class="required-star">*</span>
+          </label>
+          <input type="text" name="messenger_verify_token" value="{{ settings.messenger_verify_token or 'ms_ladies_shoes_meta_verify_2026' }}" required style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px;">
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Enter this exact same token in Meta Developer Portal when verifying the Webhook URL.
+          </div>
+        </div>
+
+        <!-- Facebook Page ID or Username -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            Facebook Page ID or Username (Optional)
+          </label>
+          <input type="text" name="messenger_page_id" value="{{ settings.messenger_page_id or '' }}" placeholder="e.g. 1029384756 or msladiesshoes" style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px;">
+        </div>
+
+        <!-- Auto-Reply Bot Toggle -->
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:14px; color:#0F172A; display:block;">Smart Order Lookup & Auto-Reply Bot</strong>
+            <span style="font-size:12px; color:#64748B;">When customer sends their Tracking ID or Phone, automatically reply with live order tracking</span>
+          </div>
+          <input type="checkbox" name="messenger_auto_reply" value="1" {{ 'checked' if settings.messenger_auto_reply == '1' else '' }} style="width:20px; height:20px; accent-color:#0084FF;">
+        </div>
+
+        <button type="submit" class="btn-save" style="background:#0F172A; padding:12px 24px; font-size:15px; width:100%;">
+          💾 Save Messenger Settings
+        </button>
+      </form>
+    </div>
+
+    <!-- Webhook Setup Guide -->
+    <div class="form-card" style="padding:24px; background:#F8FAFC;">
+      <h3 style="margin-top:0; margin-bottom:14px; font-size:17px; color:var(--admin-navy);">
+        📋 Messenger Webhook Details
+      </h3>
+
+      <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:800; color:#475569; text-transform:uppercase;">Webhook Callback URL</label>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" id="webhookUrlInput" readonly value="{{ webhook_url }}" style="flex:1; padding:8px 12px; background:#F1F5F9; border:1px solid #CBD5E1; border-radius:6px; font-family:monospace; font-size:13px;">
+          <button type="button" onclick="copyText('webhookUrlInput', 'Webhook URL')" class="btn sm navy" style="padding:8px 12px;">Copy</button>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:800; color:#475569; text-transform:uppercase;">Verify Token</label>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" id="verifyTokenInput" readonly value="{{ settings.messenger_verify_token or 'ms_ladies_shoes_meta_verify_2026' }}" style="flex:1; padding:8px 12px; background:#F1F5F9; border:1px solid #CBD5E1; border-radius:6px; font-family:monospace; font-size:13px;">
+          <button type="button" onclick="copyText('verifyTokenInput', 'Verify Token')" class="btn sm navy" style="padding:8px 12px;">Copy</button>
+        </div>
+      </div>
+
+      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:16px; font-size:13px; color:#1E40AF; line-height:1.6;">
+        <strong>🚀 How to connect Facebook Messenger:</strong>
+        <ol style="margin:8px 0 0 18px; padding:0;">
+          <li>Visit <a href="https://developers.facebook.com" target="_blank" style="color:#1D4ED8; font-weight:700;">developers.facebook.com</a> &gt; Create App.</li>
+          <li>Add <strong>Messenger</strong> &gt; Connect your Page.</li>
+          <li>Generate a <strong>Page Access Token</strong> and paste it into the form.</li>
+          <li>In Webhooks, paste the Webhook URL and Verify Token above.</li>
+          <li>Subscribe to <code>messages</code> and <code>messaging_postbacks</code>.</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 4: WHATSAPP BUSINESS CLOUD API SETTINGS
+     ========================================================================= -->
+<div id="tabContentWASettings" style="{{ 'display:block;' if channel == 'wa_settings' else 'display:none;' }}">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    
+    <!-- WhatsApp Settings Form -->
+    <div class="form-card" style="padding:24px;">
+      <h3 style="margin-top:0; margin-bottom:16px; font-size:18px; color:var(--admin-navy); display:flex; align-items:center; gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M12.031 2C6.495 2 2 6.495 2 12.031c0 1.97.57 3.805 1.554 5.352L2.094 22l4.757-1.428A10.007 10.007 0 0 0 12.031 22C17.568 22 22 17.505 22 12.031 22 6.495 17.568 2 12.031 2zm5.748 14.156c-.24.673-1.393 1.288-1.922 1.344-.504.053-1.127.078-3.414-.863-2.716-1.117-4.48-3.865-4.615-4.045-.135-.18-1.096-1.457-1.096-2.778 0-1.32.69-1.969.936-2.235.24-.265.527-.33.703-.33.176 0 .352.003.504.01.164.009.384-.062.6.457.224.536.764 1.86.83 1.996.067.135.11.293.02.473-.09.18-.135.293-.27.45-.135.158-.284.352-.405.473-.135.135-.277.283-.12.553.158.27 1.053 1.733 2.26 2.808 1.554 1.383 2.862 1.81 3.268 1.978.406.168.644.14.884-.135.24-.275 1.026-1.196 1.302-1.606.276-.41.553-.342.928-.204.375.137 2.38 1.123 2.787 1.326.406.204.676.305.776.474.1.17.1.984-.14 1.657z"/></svg>
+        WhatsApp Business Cloud API Configuration
+      </h3>
+
+      <form method="post" action="{{ url_for('main.admin_whatsapp_settings') }}">
+        
+        <!-- Toggle WhatsApp Enabled -->
+        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:14px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:14.5px; color:#14532D; display:block;">Enable WhatsApp Business Cloud API</strong>
+            <span style="font-size:12px; color:#15803D;">Receive incoming customer WhatsApp messages & dispatch real-time order alerts</span>
+          </div>
+          <input type="checkbox" name="whatsapp_enabled" value="1" {{ 'checked' if settings.whatsapp_enabled == '1' else '' }} style="width:20px; height:20px; accent-color:#16A34A;">
+        </div>
+
+        <!-- Phone Number ID -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            WhatsApp Phone Number ID <span class="required-star">*</span>
+          </label>
+          <input type="text" name="whatsapp_phone_number_id" value="{{ settings.whatsapp_phone_number_id or '' }}" placeholder="e.g. 104829104829104" required style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; font-family:monospace;">
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Found in Meta Developer Portal &gt; WhatsApp &gt; API Setup &gt; Phone number ID.
+          </div>
+        </div>
+
+        <!-- WhatsApp Business Account ID -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            WhatsApp Business Account ID (WABA ID)
+          </label>
+          <input type="text" name="whatsapp_business_account_id" value="{{ settings.whatsapp_business_account_id or '' }}" placeholder="e.g. 109283746501928" style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px; font-family:monospace;">
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Found in Meta Developer Portal &gt; WhatsApp &gt; API Setup &gt; WhatsApp Business Account ID.
+          </div>
+        </div>
+
+        <!-- System User Permanent Access Token -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            Permanent Access Token (Bearer Token) <span class="required-star">*</span>
+          </label>
+          <textarea name="whatsapp_access_token" rows="3" placeholder="Paste your permanent Meta Cloud API token (starts with EAAB...)" style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:13px; font-family:monospace;">{{ settings.whatsapp_access_token or '' }}</textarea>
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Generated from Meta Business Manager &gt; System Users &gt; Generate Token (permissions: <code>whatsapp_business_messaging</code>).
+          </div>
+        </div>
+
+        <!-- Custom Webhook Verify Token -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:6px; display:block;">
+            Webhook Verify Token <span class="required-star">*</span>
+          </label>
+          <input type="text" name="whatsapp_verify_token" value="{{ settings.whatsapp_verify_token or 'ms_ladies_shoes_meta_verify_2026' }}" required style="width:100%; padding:10px; border:1px solid #CBD5E1; border-radius:8px; font-size:14px;">
+          <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+            Must match the verify token entered in the WhatsApp Webhook configuration on Meta.
+          </div>
+        </div>
+
+        <!-- Auto-Reply Bot Toggle -->
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong style="font-size:14px; color:#0F172A; display:block;">WhatsApp Smart Order Lookup & Auto-Reply Bot</strong>
+            <span style="font-size:12px; color:#64748B;">When customer messages their Tracking ID, Order #, or phone number, instantly send live tracking details</span>
+          </div>
+          <input type="checkbox" name="whatsapp_auto_reply" value="1" {{ 'checked' if settings.whatsapp_auto_reply == '1' else '' }} style="width:20px; height:20px; accent-color:#16A34A;">
+        </div>
+
+        <button type="submit" class="btn-save" style="background:#15803D; padding:12px 24px; font-size:15px; width:100%;">
+          💾 Save WhatsApp Cloud API Settings
+        </button>
+      </form>
+    </div>
+
+    <!-- WhatsApp Cloud API Guide -->
+    <div class="form-card" style="padding:24px; background:#F8FAFC;">
+      <h3 style="margin-top:0; margin-bottom:14px; font-size:17px; color:var(--admin-navy);">
+        🟢 WhatsApp Webhook Configuration Guide
+      </h3>
+
+      <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:800; color:#475569; text-transform:uppercase;">1. Webhook Callback URL</label>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" id="waWebhookUrlInput" readonly value="{{ webhook_url }}" style="flex:1; padding:8px 12px; background:#F1F5F9; border:1px solid #CBD5E1; border-radius:6px; font-family:monospace; font-size:13px;">
+          <button type="button" onclick="copyText('waWebhookUrlInput', 'WhatsApp Webhook URL')" class="btn sm navy" style="padding:8px 12px;">Copy</button>
+        </div>
+        <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+          Meta uses the exact same /webhook route for both Messenger and WhatsApp Cloud API!
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:800; color:#475569; text-transform:uppercase;">2. Verify Token</label>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" id="waVerifyTokenInput" readonly value="{{ settings.whatsapp_verify_token or 'ms_ladies_shoes_meta_verify_2026' }}" style="flex:1; padding:8px 12px; background:#F1F5F9; border:1px solid #CBD5E1; border-radius:6px; font-family:monospace; font-size:13px;">
+          <button type="button" onclick="copyText('waVerifyTokenInput', 'Verify Token')" class="btn sm navy" style="padding:8px 12px;">Copy</button>
+        </div>
+      </div>
+
+      <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <label style="font-size:12px; font-weight:800; color:#475569; text-transform:uppercase;">3. Subscribed WhatsApp Field</label>
+        <div style="margin-top:6px; display:flex; gap:8px;">
+          <span class="pill" style="background:#DCFCE7; color:#15803D; font-weight:800; font-size:12px;">messages</span>
+        </div>
+      </div>
+
+      <div style="background:#F0FDF4; border:1px solid #86EFAC; border-radius:10px; padding:16px; font-size:13px; color:#14532D; line-height:1.6;">
+        <strong>⚡ Meta Cloud API ৩টি নিয়ম:</strong>
+        <ul style="margin:8px 0 0 18px; padding:0;">
+          <li><strong>Webhook রিসিভ:</strong> কাস্টমার হোয়াটসঅ্যাপে মেসেজ পাঠালে Meta তাৎক্ষণিকভাবে আপনার <code>/webhook</code> রাউটে <code>object: "whatsapp_business_account"</code> আকারে পাঠাবে।</li>
+          <li><strong>২৪ ঘণ্টার উইন্ডো:</strong> কাস্টমার শেষ মেসেজ পাঠানোর ২৪ ঘণ্টা পর্যন্ত সম্পূর্ণ ফ্রিতে আনলিমিটেড ফ্রি-ফর্ম মেসেজ পাঠানো যায়।</li>
+          <li><strong>অটো-ট্র্যাকিং:</strong> কাস্টমার তার ট্র্যাকিং আইডি বা ফোন নম্বর লিখে মেসেজ দিলেই অ্যাপ স্বয়ংক্রিয়ভাবে তার অর্ডার খুঁজে লাইভ ট্র্যাকিং লিংক পাঠিয়ে দেবে।</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 5: ANDROID AIRTEL SIM SMS GATEWAY & LOGS
+     ========================================================================= -->
+<div id="tabContentSMS" style="{{ 'display:block;' if channel == 'sms' else 'display:none;' }}">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    
+    <!-- Left Column: Quick SMS Sender & Gateway Settings -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- Quick SMS Sender Card -->
+      <div class="form-card" style="padding:22px; border-top:4px solid #EF4444;">
+        <h3 style="margin-top:0; margin-bottom:14px; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#EF4444"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          ⚡ Quick SMS Sender (সরাসরি এসএমএস পাঠান)
+        </h3>
+        <p style="font-size:12.5px; color:#64748B; margin:0 0 14px 0;">
+          আপনার অ্যান্ড্রয়েড ফোনে থাকা এয়ারটেল (Airtel) সিম ব্যবহার করে কাস্টমারকে যেকোনো মেসেজ পাঠান:
+        </p>
+
+        <form method="post" action="{{ url_for('main.admin_sms_send') }}">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+              Recipient Mobile Number (গ্রাহকের নম্বর) <span class="required-star">*</span>
+            </label>
+            <input type="text" name="recipient_number" id="smsRecipientInput" placeholder="e.g. 017XXXXXXXX" required style="width:100%; padding:9px 12px; border:1px solid #CBD5E1; border-radius:6px; font-size:14px;">
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+              Link to Order (ঐচ্ছিক)
+            </label>
+            <select name="order_id" onchange="if(this.value) { var mob = this.options[this.selectedIndex].getAttribute('data-phone'); if(mob) document.getElementById('smsRecipientInput').value = mob; }" style="width:100%; padding:8px 10px; font-size:13px; border-radius:6px; border:1px solid #CBD5E1;">
+              <option value="">Select an order to autofill phone...</option>
+              {% for ord in recent_orders %}
+              <option value="{{ ord.id }}" data-phone="{{ ord.mobile_number }}">
+                #{{ ord.id }} - {{ ord.customer_name }} ({{ ord.mobile_number }}) - {{ ord.product_sku }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="font-size:12.5px; font-weight:700; color:#1E293B;">
+                Message Text (বার্তা) <span class="required-star">*</span>
+              </label>
+              <span id="smsCharCount" style="font-size:11px; color:#64748B;">0 / 160 chars (1 SMS)</span>
+            </div>
+            <textarea name="message_text" id="smsMessageInput" rows="3" required placeholder="Write message to send via Android phone..." oninput="updateSmsCount(this)" style="width:100%; padding:10px 12px; border:1px solid #CBD5E1; border-radius:8px; font-size:13.5px;"></textarea>
+          </div>
+
+          <button type="submit" class="btn-save" style="background:#EF4444; padding:10px 20px; font-size:14px; width:100%;">
+            📤 Send SMS via Airtel SIM
+          </button>
+        </form>
+      </div>
+
+      <!-- Android Gateway Settings Form -->
+      <div class="form-card" style="padding:22px;">
+        <h3 style="margin-top:0; margin-bottom:14px; font-size:17.5px; color:var(--admin-navy); display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#0F172A"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          ⚙️ Android Gateway &amp; Airtel SIM Configuration
+        </h3>
+
+        <form method="post" action="{{ url_for('main.admin_sms_settings') }}">
+          <!-- Toggle Enabled -->
+          <div style="background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="font-size:14px; color:#991B1B; display:block;">Enable Android Phone SMS Gateway</strong>
+              <span style="font-size:12px; color:#B91C1C;">Connect your Android phone to automatically send SMS</span>
+            </div>
+            <input type="checkbox" name="sms_enabled" value="1" {{ 'checked' if settings.sms_enabled == '1' else '' }} style="width:20px; height:20px; accent-color:#EF4444;">
+          </div>
+
+          <!-- Gateway URL -->
+          <div style="margin-bottom:14px;">
+            <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+              Android Gateway API URL <span class="required-star">*</span>
+            </label>
+            <input type="text" name="sms_gateway_url" value="{{ settings.sms_gateway_url or '' }}" placeholder="e.g. http://192.168.0.105:8080/send or https://api.textbee.dev/..." required style="width:100%; padding:9px 12px; border:1px solid #CBD5E1; border-radius:6px; font-size:13.5px; font-family:monospace;">
+            <div style="font-size:11.5px; color:#64748B; margin-top:4px;">
+              Your Android SMS Gateway app will provide this URL when started.
+            </div>
+          </div>
+
+          <!-- API Key / Token -->
+          <div style="margin-bottom:14px;">
+            <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+              API Secret Key / Token (Optional)
+            </label>
+            <input type="password" name="sms_api_key" value="{{ settings.sms_api_key or '' }}" placeholder="Enter secret token from your app (if set)" style="width:100%; padding:9px 12px; border:1px solid #CBD5E1; border-radius:6px; font-size:13.5px; font-family:monospace;">
+          </div>
+
+          <!-- SIM Slot & Operator -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+            <div>
+              <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+                SIM Slot
+              </label>
+              <select name="sms_sim_slot" style="width:100%; padding:8px 10px; border:1px solid #CBD5E1; border-radius:6px; font-size:13px;">
+                <option value="1" {{ 'selected' if settings.sms_sim_slot == '1' else '' }}>SIM 1 (Default)</option>
+                <option value="2" {{ 'selected' if settings.sms_sim_slot == '2' else '' }}>SIM 2</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12.5px; font-weight:700; color:#1E293B; margin-bottom:4px; display:block;">
+                SIM Operator
+              </label>
+              <input type="text" name="sms_sim_operator" value="{{ settings.sms_sim_operator or 'Airtel' }}" style="width:100%; padding:8px 10px; border:1px solid #CBD5E1; border-radius:6px; font-size:13px;">
+            </div>
+          </div>
+
+          <!-- Auto Milestone Notification Toggle -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="font-size:13.5px; color:#0F172A; display:block;">Auto-Send Order Milestone SMS</strong>
+              <span style="font-size:11.5px; color:#64748B;">Send SMS on Payment Verified, Packaged, Out for Delivery, Delivered</span>
+            </div>
+            <input type="checkbox" name="sms_auto_notify" value="1" {{ 'checked' if settings.sms_auto_notify == '1' else '' }} style="width:18px; height:18px; accent-color:#EF4444;">
+          </div>
+
+          <button type="submit" class="btn-save" style="background:#0F172A; padding:10px 20px; font-size:14px; width:100%;">
+            💾 Save SMS Gateway Settings
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Right Column: SMS Logs Table & Setup Guide -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      
+      <!-- SMS History & Delivery Logs -->
+      <div class="form-card" style="padding:22px; height:420px; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:16.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+            <span>📋</span> SMS Delivery Logs (সর্বশেষ প্রেরিত এসএমএস)
+          </h3>
+          <span class="smart-tab-badge" style="background:#FEF2F2; color:#B91C1C;">{{ sms_logs|length }} sent</span>
+        </div>
+
+        <div style="flex:1; overflow-y:auto; border:1px solid #E2E8F0; border-radius:8px;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; text-align:left; color:#475569;">
+                <th style="padding:8px 10px;">Recipient</th>
+                <th style="padding:8px 10px;">Message</th>
+                <th style="padding:8px 10px;">Order</th>
+                <th style="padding:8px 10px;">Status</th>
+                <th style="padding:8px 10px;">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in sms_logs %}
+              <tr style="border-bottom:1px solid #F1F5F9;">
+                <td style="padding:8px 10px; font-weight:700; font-family:monospace; color:#0F172A;">
+                  {{ s.recipient_number }}
+                </td>
+                <td style="padding:8px 10px; color:#334155; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ s.message_text }}">
+                  {{ s.message_text }}
+                </td>
+                <td style="padding:8px 10px;">
+                  {% if s.order_id %}
+                  <a href="{{ url_for('main.admin_order', order_id=s.order_id) }}" style="color:#0084FF; font-weight:700; text-decoration:none;">
+                    #{{ s.order_id }}
+                  </a>
+                  {% else %}—{% endif %}
+                </td>
+                <td style="padding:8px 10px;">
+                  {% if s.status == 'sent' %}
+                  <span class="pill" style="background:#DCFCE7; color:#15803D; font-size:10px; padding:2px 6px; font-weight:700;">Sent</span>
+                  {% else %}
+                  <span class="pill" style="background:#FEE2E2; color:#B91C1C; font-size:10px; padding:2px 6px; font-weight:700;" title="{{ s.error_message }}">Failed</span>
+                  {% endif %}
+                </td>
+                <td style="padding:8px 10px; color:#94A3B8; font-size:10.5px; white-space:nowrap;">
+                  {{ s.created_at.strftime('%d %b %H:%M') if s.created_at else '' }}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" style="text-align:center; padding:40px 10px; color:#94A3B8;">
+                  📱 No SMS dispatched yet.<br>
+                  Configure your Android Gateway to begin sending!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Android Airtel Gateway Setup Instructions -->
+      <div class="form-card" style="padding:22px; background:#F8FAFC; border:1px solid #E2E8F0;">
+        <h3 style="margin-top:0; margin-bottom:12px; font-size:16px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+          <span>📱</span> অ্যান্ড্রয়েড ফোন দিয়ে এয়ারটেল সিম গেটওয়ে বানানোর নিয়ম:
+        </h3>
+
+        <div style="font-size:12.5px; color:#334155; line-height:1.6;">
+          <ol style="margin:0 0 12px 18px; padding:0;">
+            <li><strong>অ্যান্ড্রয়েড অ্যাপ ইনস্টল:</strong> আপনার অ্যান্ড্রয়েড ফোনে (যেটিতে Airtel সিম ভরা আছে) যেকোনো ফ্রি SMS Gateway অ্যাপ ইনস্টল করুন:
+              <ul style="margin:4px 0; padding-left:16px; font-size:12px; color:#0F172A;">
+                <li>• <em>Android SMS Gateway</em> (GitHub / F-Droid - সম্পূর্ণ ফ্রি ও ওপেন সোর্স)</li>
+                <li>• <em>SMS Gateway API</em> (Google Play Store)</li>
+                <li>• <em>TextBee</em> (GitHub / Cloud)</li>
+              </ul>
+            </li>
+            <li><strong>গেটওয়ে চালু:</strong> অ্যাপটি ওপেন করে "Start Server" বাটনে চাপুন। অ্যাপটি আপনাকে একটি লোকাল বা ক্লাউড API URL দেবে (যেমন: <code>http://192.168.0.105:8080/send</code>)।</li>
+            <li><strong>Flask অ্যাপে যুক্ত:</strong> বাম পাশের <em>Android Gateway API URL</em> বক্সে ওই URL-টি পেস্ট করুন এবং <em>Save Settings</em> দিন।</li>
+            <li><strong>পরীক্ষা:</strong> উপরে <em>Quick SMS Sender</em> থেকে আপনার নিজের নম্বরে একটি টেস্ট এসএমএস পাঠিয়ে ভেরিফাই করুন!</li>
+          </ol>
+
+          <div style="background:#FEF3C7; border:1px solid #FDE68A; border-radius:8px; padding:10px 12px; font-size:11.5px; color:#92400E; line-height:1.5;">
+            ⚠️ <strong>এয়ারটেল সিম সেফটি সতর্কতা (Anti-Spam Advice):</strong> পার্সোনাল এয়ারটেল সিম দিয়ে একসাথে কয়েকশো এসএমএস একটানা পাঠাবেন না। অর্ডারের স্বাভাবিক লাইফসাইকেল নোটিফিকেশন পাঠালে এয়ারটেল কোনো সমস্যা করে না।
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================================================================
+     TAB 6: ADMIN NOTES & OPERATIONAL GUIDELINES (জরুরি নিয়মাবলি)
+     ========================================================================= -->
+<div id="tabContentAdminNotes" style="{{ 'display:block;' if channel == 'admin_notes' else 'display:none;' }}">
+  <div style="display:flex; flex-direction:column; gap:20px;">
+
+    <!-- Top Banner Card -->
+    <div class="form-card" style="padding:22px 28px; background:linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color:#FFFFFF; border-radius:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h2 style="margin:0 0 6px 0; font-size:22px; display:flex; align-items:center; gap:10px;">
+            <span>📖</span> Meta Omnichannel Integration — অ্যাডমিন জরুরি নোটস ও গাইড
+          </h2>
+          <p style="margin:0; font-size:13.5px; color:#94A3B8;">
+            হোয়াটসঅ্যাপ বিজনেস ক্লাউড এপিআই এবং মেসেঞ্জার সংক্রান্ত সকল নিয়মাবলি, সেটআপ গাইড ও ট্র্যাকিং অটোমেশন নির্দেশিকা এক নজরে।
+          </p>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <a href="https://developers.facebook.com" target="_blank" class="btn sm ok" style="background:#25D366; text-decoration:none; padding:8px 16px; font-weight:700;">
+            🔗 Meta Developer Portal &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Meta Portal Quick Setup Card -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #0084FF;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span style="background:#EFF6FF; color:#0084FF; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">১</span>
+        🚀 মেটা পোর্টালে যুক্ত করার নিয়ম (Quick Setup Guide)
+      </h3>
+      <p style="font-size:13.5px; color:#475569; margin:4px 0 16px 0;">
+        মেটা ডেভেলপার পোর্টালে আপনার অ্যাপ কনফিগারেশন করার জন্য নিচের স্টেপগুলো অনুসরণ করুন:
+      </p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-bottom:18px;">
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px;">
+          <div style="font-size:12px; font-weight:800; color:#64748B; text-transform:uppercase;">ধাপ ১: Phone Number ID</div>
+          <div style="font-size:13.5px; color:#0F172A; font-weight:600; margin-top:4px;">
+            WhatsApp &gt; API Setup থেকে <strong>Phone number ID</strong> কপি করে অ্যাডমিন সেটিংসে বসান।
+          </div>
+        </div>
+
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px;">
+          <div style="font-size:12px; font-weight:800; color:#64748B; text-transform:uppercase;">ধাপ ২: WABA ID</div>
+          <div style="font-size:13.5px; color:#0F172A; font-weight:600; margin-top:4px;">
+            API Setup থেকে <strong>WhatsApp Business Account ID</strong> কপি করে সেটিংসে বসান।
+          </div>
+        </div>
+
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px;">
+          <div style="font-size:12px; font-weight:800; color:#64748B; text-transform:uppercase;">ধাপ ৩: Permanent Token</div>
+          <div style="font-size:13.5px; color:#0F172A; font-weight:600; margin-top:4px;">
+            Business Manager &gt; System Users থেকে পারমানেন্ট টোকেন তৈরি করে বসান।
+          </div>
+        </div>
+
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px;">
+          <div style="font-size:12px; font-weight:800; color:#64748B; text-transform:uppercase;">ধাপ ৪: Webhook Callback</div>
+          <div style="font-size:13.5px; color:#0F172A; font-weight:600; margin-top:4px;">
+            Webhook URL এবং Verify Token মেটা পোর্টালে বসিয়ে <code>messages</code> ফিল্ডটি সাবস্ক্রাইব করুন।
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Copy Helper Box -->
+      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:16px; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <div style="flex:1; min-width:240px;">
+          <label style="font-size:11px; font-weight:800; color:#1D4ED8; text-transform:uppercase;">Webhook Callback URL</label>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <input type="text" id="adminNoteWebhookUrl" readonly value="{{ webhook_url }}" style="flex:1; padding:6px 10px; font-size:12.5px; font-family:monospace; background:#FFFFFF; border:1px solid #93C5FD; border-radius:6px;">
+            <button type="button" onclick="copyText('adminNoteWebhookUrl', 'Webhook URL')" class="btn sm navy" style="padding:6px 12px; font-size:12px;">Copy</button>
+          </div>
+        </div>
+
+        <div style="flex:1; min-width:240px;">
+          <label style="font-size:11px; font-weight:800; color:#1D4ED8; text-transform:uppercase;">Verify Token</label>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <input type="text" id="adminNoteVerifyToken" readonly value="{{ settings.whatsapp_verify_token or 'ms_ladies_shoes_meta_verify_2026' }}" style="flex:1; padding:6px 10px; font-size:12.5px; font-family:monospace; background:#FFFFFF; border:1px solid #93C5FD; border-radius:6px;">
+            <button type="button" onclick="copyText('adminNoteVerifyToken', 'Verify Token')" class="btn sm navy" style="padding:6px 12px; font-size:12px;">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Smart Chatbot & Auto Order Link -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #10B981;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span style="background:#DCFCE7; color:#15803D; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">২</span>
+        🤖 স্মার্ট চ্যাটবট ও অটোমেটিক অর্ডার লিংক (২৪ ঘণ্টার ফ্রি উইন্ডো)
+      </h3>
+      
+      <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:16px; margin-bottom:16px; font-size:13.5px; color:#14532D; line-height:1.6;">
+        <ul style="margin:0; padding-left:18px;">
+          <li><strong>স্বয়ংক্রিয় অর্ডার লিংক:</strong> কাস্টমার হোয়াটসঅ্যাপে মেসেজ পাঠালে সিস্টেম তার মেসেজ থেকে <strong>Tracking ID</strong> (যেমন <code>A0368762965B</code>), <strong>Order ID</strong> (যেমন <code>#12</code>), অথবা <strong>মোবাইল নম্বর</strong> স্বয়ংক্রিয়ভাবে শনাক্ত করে অর্ডারের সাথে লিংক করে নেয়।</li>
+          <li><strong>ফোন নম্বর ম্যাচিং:</strong> কাস্টমারের ফোন নম্বর (<code>8801XXXXXXXXX</code> বা <code>01XXXXXXXXX</code>) ডেটাবেজের অর্ডারের সাথে মিললে চ্যাটবট স্বয়ংক্রিয়ভাবে অর্ডারের লাইভ ট্র্যাকিং লিঙ্ক, জুতার সাইজ, পরিমাণ ও বর্তমান স্ট্যাটাস দিয়ে ফ্রি-ফর্ম রিপ্লাই পাঠায়।</li>
+          <li><strong>২৪ ঘণ্টার নিয়ম (24-Hour Window):</strong> কাস্টমার কোনো মেসেজ পাঠানো মাত্রই পরবর্তী ২৪ ঘণ্টা পর্যন্ত আপনি তাকে সম্পূর্ণ ফ্রিতে সরাসরি কাস্টম মেসেজ পাঠাতে পারবেন।</li>
+        </ul>
+      </div>
+
+      <!-- Preview of Bot Reply -->
+      <div style="background:#F8FAFC; border:1px solid #CBD5E1; border-radius:10px; padding:14px;">
+        <div style="font-size:12px; font-weight:800; color:#475569; margin-bottom:6px;">💬 চ্যাটবট কাস্টমারকে স্বয়ংক্রিয়ভাবে যা পাঠায় (Sample Auto-Reply):</div>
+        <div style="background:#FFFFFF; border-left:3px solid #25D366; padding:10px 14px; font-size:13px; font-family:monospace; color:#1E293B; line-height:1.5;">
+          ✅ Assalamu Alaikum [Customer Name]! Found your Order #12 (High Heel Pump).<br>
+          • Shoe Size: 38 (1 pair)<br>
+          • Current Status: Out for Delivery<br>
+          • Total Payable: BDT 1,570<br>
+          📍 Live Tracking: https://yourshop.com/track/A0368762965B<br><br>
+          🔔 Your WhatsApp is now connected! You will automatically receive updates here for every step.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Lifecycle Milestone Auto-Notifications -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #F59E0B;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span style="background:#FEF3C7; color:#92400E; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">৩</span>
+        📦 অর্ডার লাইফসাইকেল ৫-ধাপের অটো-নোটিফিকেশন (WhatsApp Cloud API)
+      </h3>
+      <p style="font-size:13.5px; color:#475569; margin:4px 0 16px 0;">
+        অ্যাডমিন যখন ড্যাশবোর্ড বা অর্ডার ডিটেইলস পেজ থেকে একটি অর্ডারের স্ট্যাটাস পরিবর্তন করবেন, তখন কাস্টমারের হোয়াটসঅ্যাপে সাথে সাথে অটোমেটিক মেসেজ চলে যায়:
+      </p>
+
+      <div style="display:grid; grid-template-columns:1fr; gap:10px;">
+        <div style="display:flex; gap:14px; align-items:flex-start; padding:12px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+          <span style="font-size:20px; line-height:1;">⚡</span>
+          <div style="flex:1;">
+            <strong style="font-size:13.5px; color:#0F172A;">1. Payment Verified (পেমেন্ট নিশ্চিতকরণ)</strong>
+            <div style="font-size:12.5px; color:#64748B; margin-top:2px;">পেমেন্ট অ্যাপ্রুভ করলে কাস্টমারকে জুতা প্যাকেজিং শুরু করার নোটিফিকেশন ও লাইভ ট্র্যাকিং লিংক পাঠায়।</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start; padding:12px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+          <span style="font-size:20px; line-height:1;">📦</span>
+          <div style="flex:1;">
+            <strong style="font-size:13.5px; color:#0F172A;">2. Packaged (জুতা প্যাকেজিং সম্পন্ন)</strong>
+            <div style="font-size:12.5px; color:#64748B; margin-top:2px;">জুতা বক্স ও সিল প্যাক হয়ে গেট-আউট ও কুরিয়ার পিকআপের জন্য প্রস্তুত হওয়ার অ্যালার্ট পাঠায়।</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start; padding:12px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+          <span style="font-size:20px; line-height:1;">🚚</span>
+          <div style="flex:1;">
+            <strong style="font-size:13.5px; color:#0F172A;">3. Gate Out / Out for Delivery (রাইডার হ্যান্ডওভার)</strong>
+            <div style="font-size:12.5px; color:#64748B; margin-top:2px;">কুরিয়ারের নাম (Steadfast/RedX/Pathao) ও কনসাইনমেন্ট নম্বরসহ ডেলিভারি রাইডার সংক্রান্ত মেসেজ পাঠায়।</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start; padding:12px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+          <span style="font-size:20px; line-height:1;">🎉</span>
+          <div style="flex:1;">
+            <strong style="font-size:13.5px; color:#0F172A;">4. Delivered / Received (ডেলিভারি সম্পন্ন)</strong>
+            <div style="font-size:12.5px; color:#64748B; margin-top:2px;">জুতা ডেলিভারি হওয়ার পর কাস্টমারকে ধন্যবাদ জানানো ও ৩০ সেকেন্ডে স্টার রেটিং রিভিউ দেওয়ার লিঙ্ক পাঠায়।</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:flex-start; padding:12px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+          <span style="font-size:20px; line-height:1;">🌟</span>
+          <div style="flex:1;">
+            <strong style="font-size:13.5px; color:#0F172A;">5. Completed (অর্ডার ক্লোজ ও সমাপ্তি)</strong>
+            <div style="font-size:12.5px; color:#64748B; margin-top:2px;">অর্ডার ভেরিফাই হয়ে সমাপ্তি ঘোষণা ও ভবিষ্যতে আরও জুতা কেনার জন্য সন্তুষ্টি বার্তা পাঠায়।</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Omnichannel Hub Usage Guidelines -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #8B5CF6;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span style="background:#EDE9FE; color:#6D28D9; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">৪</span>
+        💬 অ্যাডমিন Omnichannel হাব ব্যবহারের নিয়ম
+      </h3>
+      <div style="font-size:13.5px; color:#475569; line-height:1.6;">
+        <p style="margin:0 0 10px 0;">
+          এই হাব থেকে আপনি একই সাথে <strong>Facebook Messenger</strong> এবং <strong>WhatsApp Business Cloud API</strong>-র লাইভ ইনবক্স হ্যান্ডেল করতে পারবেন:
+        </p>
+        <ul style="margin:0; padding-left:18px;">
+          <li><strong>কনভারসেশন ভিউ:</strong> বাম পাশের সাইডবারে সকল কাস্টমারের তালিকা ও তাদের সাথে লিংক থাকা অর্ডারের স্ট্যাটাস দেখতে পাবেন।</li>
+          <li><strong>সরাসরি রিপ্লাই:</strong> যেকোনো কাস্টমারের চ্যাটে ক্লিক করে নিচে থেকে টাইপ করে সেন্ড বাটনে চাপলেই মেসেজটি কাস্টমারের মেসেঞ্জার বা হোয়াটসঅ্যাপ অ্যাপে চলে যাবে।</li>
+          <li><strong>ম্যানুয়াল অর্ডার লিংক:</strong> কোনো কাস্টমার যদি নতুন কোনো নম্বর বা অ্যাকাউন্ট থেকে মেসেজ দেয়, তবে ওপরের ড্রপডাউন থেকে রিসেন্ট যেকোনো অর্ডারে সিলেক্ট করে "Link" বাটনে চাপলেই কথোপকথনটি স্থায়ীভাবে সেই অর্ডারের সাথে যুক্ত হয়ে যাবে।</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Order Detail Cloud Card Guidelines -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #EC4899;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#0F172A; display:flex; align-items:center; gap:8px;">
+        <span style="background:#FCE7F3; color:#BE185D; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">৫</span>
+        📱 অর্ডার ডিটেইলস পেজে হোয়াটসঅ্যাপ ক্লাউড কার্ড
+      </h3>
+      <div style="font-size:13.5px; color:#475569; line-height:1.6;">
+        <p style="margin:0 0 10px 0;">
+          প্রতিটি অর্ডারের ডিটেইলস পেজে (<code>/admin/order/&lt;id&gt;</code>) মেটা মেসেঞ্জার এবং হোয়াটসঅ্যাপ ক্লাউড কার্ড যুক্ত রয়েছে:
+        </p>
+        <ul style="margin:0; padding-left:18px;">
+          <li><strong>🔔 Send WhatsApp Test Ping:</strong> এই বাটনে চাপ দিলে সিস্টেম তাৎক্ষণিকভাবে কাস্টমারের নম্বরে একটি টেস্ট পিং পাঠাবে, যা দিয়ে এপিআই সংযোগ সক্রিয় আছে কিনা যাচাই করা যায়।</li>
+          <li><strong>💬 Open WhatsApp Cloud Chat Thread:</strong> এই বাটনে ক্লিক করলেই অ্যাডমিন ইনবক্সে সরাসরি ওই কাস্টমারের সাথে মেসেজ আদান-প্রদানের স্ক্রিন ওপেন হবে।</li>
+          <li><strong>নম্বর পরিবর্তন:</strong> কাস্টমার যদি অন্য কোনো হোয়াটসঅ্যাপ নম্বর দিতে চান, তবে ড্রপডাউন এক্সপ্যান্ড করে নতুন নম্বর লিখে "Update Number"-এ ক্লিক করলেই অর্ডার আপডেট হয়ে যাবে।</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. Billing & Cost Rules -->
+    <div class="form-card" style="padding:24px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#92400E; display:flex; align-items:center; gap:8px;">
+        <span>💰</span> মেটা ক্লাউড এপিআই খরচের হিসাব ও গুরুত্বপূর্ণ নিয়মাবলি
+      </h3>
+      <div style="font-size:13.5px; color:#78350F; line-height:1.6;">
+        <ul style="margin:0; padding-left:18px;">
+          <li><strong>সম্পূর্ণ ফ্রি কোটা:</strong> প্রতি মাসে প্রথম <strong>১,০০০টি কাস্টমার-ইনশিয়েটেড কনভারসেশন</strong> (যখন কাস্টমার আগে মেসেজ দেয়) মেটা সম্পূর্ণ ফ্রিতে দেয়। ছোট-মাঝারি দোকানের জন্য এটি প্রায় সব মাসেই সম্পূর্ণ ফ্রি থাকে।</li>
+          <li><strong>২৪ ঘণ্টার নিয়ম:</strong> কাস্টমার শেষ মেসেজ পাঠানোর পরবর্তী ২৪ ঘণ্টা পর্যন্ত আপনি তাকে নিজের ইচ্ছামতো যেকোনো টেক্সট বা ট্র্যাকিং লিংক পাঠাতে পারবেন কোনো চার্জ ছাড়াই।</li>
+          <li><strong>২৪ ঘণ্টার পর মেসেজ:</strong> কাস্টমারের শেষ মেসেজের ২৪ ঘণ্টা পার হয়ে গেলে সাধারণ টেক্সট পাঠানো যায় না, তখন মেটার অনুমোদিত টেমপ্লেট মেসেজ পাঠাতে হয়।</li>
+          <li><strong>ফেসবুক মেসেঞ্জার:</strong> মেসেঞ্জার কনভারসেশন সবসময় সম্পূর্ণ ফ্রি।</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. Android Phone & Airtel SIM SMS Gateway Rules -->
+    <div class="form-card" style="padding:24px; border-left:4px solid #EF4444; background:#FEF2F2; border-radius:12px;">
+      <h3 style="margin-top:0; font-size:17.5px; color:#991B1B; display:flex; align-items:center; gap:8px;">
+        <span style="background:#FEE2E2; color:#B91C1C; padding:4px 8px; border-radius:6px; font-size:14px; font-weight:800;">৭</span>
+        📱 অ্যান্ড্রয়েড ফোন ও এয়ারটেল (Airtel) সিম এসএমএস গেটওয়ে নিয়মাবলি
+      </h3>
+      <div style="font-size:13.5px; color:#7F1D1D; line-height:1.6;">
+        <ul style="margin:0; padding-left:18px;">
+          <li><strong>কীভাবে কাজ করে:</strong> আপনার এয়ারটেল সিমটি অ্যান্ড্রয়েড ফোনে রেখে <em>Android SMS Gateway</em> বা <em>SMS Gateway API</em> অ্যাপটি চালু করবেন। অ্যাপের লোকাল বা ক্লাউড URL আপনার Flask অ্যাপের এসএমএস সেটিংসে সেভ করবেন।</li>
+          <li><strong>স্বয়ংক্রিয় নোটিফিকেশন:</strong> অ্যাডমিন যখন পেমেন্ট অ্যাপ্রুভ, প্যাকেজিং, বা গেট-আউট ডেলিভারিতে মুভ করবেন, তখন কাস্টমারের মোবাইলে আপনার এয়ারটেল সিম থেকে সরাসরি রেগুলার এসএমএস চলে যাবে।</li>
+          <li><strong>খরচ:</strong> মেটার মতো কোনো এপিআই চার্জ নেই—শুধুমাত্র আপনার এয়ারটেল সিমে রেগুলার এসএমএস বান্ডেলের যে খরচ, তাতেই আনলিমিটেড এসএমএস চলবে।</li>
+          <li><strong>অ্যান্টি-স্প্যাম সতর্কতা:</strong> ব্যক্তিগত সিম ব্লক হওয়া থেকে বাঁচতে একটানা হাজার হাজার বাল্ক প্রমোশনাল এসএমএস পাঠাবেন না। প্রতিদিনের ডেলিভারি ও ট্র্যাকিং আপডেট পাঠাতে এয়ারটেল কোনো বাধা দেয় না।</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+  var tabM = document.getElementById('tabContentMessenger');
+  var tabW = document.getElementById('tabContentWhatsApp');
+  var tabS = document.getElementById('tabContentSettings');
+  var tabWS = document.getElementById('tabContentWASettings');
+  var tabSMS = document.getElementById('tabContentSMS');
+  var tabAN = document.getElementById('tabContentAdminNotes');
+
+  var btnM = document.getElementById('tabBtnMessenger');
+  var btnW = document.getElementById('tabBtnWhatsApp');
+  var btnS = document.getElementById('tabBtnMessengerSettings');
+  var btnWS = document.getElementById('tabBtnWASettings');
+  var btnSMS = document.getElementById('tabBtnSMS');
+  var btnAN = document.getElementById('tabBtnAdminNotes');
+
+  [tabM, tabW, tabS, tabWS, tabSMS, tabAN].forEach(function(el) { if (el) el.style.display = 'none'; });
+  [btnM, btnW, btnS, btnWS, btnSMS, btnAN].forEach(function(el) { if (el) el.classList.remove('active'); });
+
+  if (tab === 'messenger') {
+    if (tabM) tabM.style.display = 'block';
+    if (btnM) btnM.classList.add('active');
+  } else if (tab === 'whatsapp') {
+    if (tabW) tabW.style.display = 'block';
+    if (btnW) btnW.classList.add('active');
+  } else if (tab === 'settings') {
+    if (tabS) tabS.style.display = 'block';
+    if (btnS) btnS.classList.add('active');
+  } else if (tab === 'wa_settings') {
+    if (tabWS) tabWS.style.display = 'block';
+    if (btnWS) btnWS.classList.add('active');
+  } else if (tab === 'sms') {
+    if (tabSMS) tabSMS.style.display = 'block';
+    if (btnSMS) btnSMS.classList.add('active');
+  } else if (tab === 'admin_notes') {
+    if (tabAN) tabAN.style.display = 'block';
+    if (btnAN) btnAN.classList.add('active');
+  }
+}
+
+function updateSmsCount(el) {
+  var len = el.value.length;
+  var count = Math.ceil(len / 160) || 1;
+  var counter = document.getElementById('smsCharCount');
+  if (counter) {
+    counter.innerText = len + ' / 160 chars (' + count + ' SMS)';
+  }
+}
+
+function copyText(inputId, name) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value);
+  alert(name + ' copied to clipboard!');
+}
+</script>
+{% endblock %}

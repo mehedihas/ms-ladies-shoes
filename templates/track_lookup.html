@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Track Your Order - {{ shop_name }}{% endblock %}
+
+{% block content %}
+<div class="track-lookup-card">
+  <div class="track-lookup-header">
+    <div class="track-icon-badge">📍</div>
+    <h1>Track Your Order</h1>
+    <p class="muted">Enter your Tracking ID and Mobile Number below to view live order status & delivery progress.</p>
+  </div>
+
+  <form method="post" action="{{ url_for('main.track_lookup') }}">
+    <div class="form-group-wrap">
+      <label for="tracking_id" class="sweet-label">
+        <span>Tracking ID (Order Code)</span>
+        <span class="required-star">*</span>
+      </label>
+      <input type="text" id="tracking_id" name="tracking_id" required placeholder="e.g. 9A3F1B4E" style="text-transform:uppercase;">
+    </div>
+
+    <div class="form-group-wrap">
+      <label for="mobile" class="sweet-label">
+        <span>Mobile Number Used During Order</span>
+        <span class="required-star">*</span>
+      </label>
+      <input type="tel" id="mobile" name="mobile" required placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}">
+    </div>
+
+    <button class="btn-order-now submit-order-btn" type="submit">
+      <span>🔍</span> <span>Track Order Status</span>
+    </button>
+  </form>
+</div>
+{% endblock %}

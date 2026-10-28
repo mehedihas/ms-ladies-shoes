@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Customer Reviews - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+  <div class="admin-title-group">
+    <div class="admin-breadcrumb"><a href="{{ url_for('main.admin_dashboard') }}">← Dashboard</a> / Reviews</div>
+    <h1>💬 Customer Reviews & Feedback</h1>
+  </div>
+</div>
+
+<div class="form-card" style="padding: 0; overflow: hidden;">
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Product / Order</th>
+          <th>Rating</th>
+          <th>Review Comment</th>
+          <th>Visibility</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in feedbacks %}
+        <tr style="{{ 'opacity: 0.6; background: #F8FAFC;' if not f.is_visible }}">
+          <td>#{{ f.id }}</td>
+          <td>{{ f.created_at.strftime('%d %b %Y') if f.created_at else '' }}</td>
+          <td><strong>{{ f.customer_name }}</strong></td>
+          <td>
+            <div style="font-weight: 700; color: var(--admin-navy);">{{ f.product_title }}</div>
+            <a href="{{ url_for('main.track_order', tracking_hash=f.tracking_hash) }}" target="_blank" style="font-size:11px; color:var(--admin-blue);">
+              Order #{{ f.order_id }} ({{ f.tracking_hash }})
+            </a>
+          </td>
+          <td>
+            <span class="stars-gold" style="font-size:15px;">{{ '★' * f.rating }}{{ '☆' * (5 - f.rating) }}</span>
+            <span style="font-weight:700; font-size:13px; color:var(--admin-navy);">({{ f.rating }}/5)</span>
+          </td>
+          <td>
+            <div style="max-width: 300px; font-size: 13px; color: #334155;">{{ f.comment or '—' }}</div>
+          </td>
+          <td>
+            {% if f.is_visible %}
+            <span class="pill payment-verified">Visible in Shop</span>
+            {% else %}
+            <span class="pill rejected">Hidden</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <form method="post" action="{{ url_for('main.admin_feedback_toggle', fid=f.id) }}" style="display:inline;">
+              <input type="hidden" name="visible" value="{{ '0' if f.is_visible else '1' }}">
+              <button class="btn sm {{ 'bad' if f.is_visible else 'ok' }}" style="border-radius:6px;">
+                {{ 'Hide Review' if f.is_visible else 'Show Review' }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px; color:var(--admin-muted);">
+            No customer reviews found in this period.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

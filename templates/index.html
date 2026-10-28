@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ shop_name }} - New Ladies Shoes Collection{% endblock %}
+
+{% block content %}
+<!-- Hero Section Banner -->
+<div class="hero-banner">
+  <div class="hero-top-line">
+    <span class="hero-badge">✨ New Collection 2026</span>
+    <div class="hero-features">
+      <div class="hero-feat-item">💳 bKash 01638431515</div>
+    </div>
+  </div>
+  <h1 class="hero-title">Exclusive Ladies Shoes Collection</h1>
+  <p class="hero-desc">Elegant, comfortable & stylish footwear. Cash on delivery & bKash available nationwide.</p>
+</div>
+
+<!-- Section Header -->
+<div class="section-header">
+  <h2 class="section-title">
+    <span>🔥 {{ 'Search Results for "' ~ q ~ '"' if q else ('Filter by Size ' ~ size if size else 'Featured Collection') }}</span>
+  </h2>
+  <span class="muted" style="font-weight:700;">Showing {{ products|length }} Products</span>
+</div>
+
+{% if not products %}
+<div class="no-products-card">
+  <p style="font-size:16px; color:var(--gray); margin:0;">No products match your search or filter. <a href="{{ url_for('main.home') }}" style="font-weight:700;">View All Products</a></p>
+</div>
+{% endif %}
+
+<!-- Product Catalog Grid -->
+<div class="grid">
+{% for p in products %}
+  <div class="card">
+    <div class="card-slider-wrap">
+      {% include '_slider.html' %}
+    </div>
+
+    <div class="body">
+      <div class="card-sku">SKU: {{ p.sku }}</div>
+      <a href="{{ url_for('main.product_view', product_id=p.id) }}" class="card-title">
+        {{ p.title }}
+      </a>
+
+      <div class="card-price-row">
+        <span class="card-price">৳{{ '%.0f'|format(p.price) }}</span>
+        {% if p.old_price and p.old_price > p.price %}
+        <span class="card-old-price">৳{{ '%.0f'|format(p.old_price) }}</span>
+        {% endif %}
+        {% if p.is_free_delivery %}
+        <span class="card-free-tag bkash-tag" title="bKash Send Money: Free Delivery">
+          <img src="{{ url_for('static', filename='images/bkash-logo.svg') }}" alt="bKash" class="tag-bkash-img">
+          <span>বিকাশে ফ্রি ডেলিভারি</span>
+        </span>
+        {% endif %}
+      </div>
+
+      <div class="card-rating">
+        <span class="stars-gold">
+          {% if p.review_count %}
+            {{ '★' * (p.avg_rating|round|int) }}{{ '☆' * (5 - (p.avg_rating|round|int)) }}
+          {% else %}
+            ★★★★★
+          {% endif %}
+        </span>
+        <span class="muted">({{ p.avg_rating if p.avg_rating else '5.0' }})</span>
+      </div>
+
+      <div class="card-sizes-pills">
+        {% for s in p.available_sizes.split(',') %}
+        <span class="size-mini-pill">{{ s.strip() }}</span>
+        {% endfor %}
+      </div>
+
+      <a class="btn-order-now" href="{{ url_for('main.product_view', product_id=p.id) }}">
+        <span class="cart-icon">🛒</span>
+        <span class="btn-text-col">
+          <span class="btn-bn">অর্ডার করুন</span>
+          <span class="btn-en">Order Now</span>
+        </span>
+      </a>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}
