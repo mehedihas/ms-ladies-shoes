@@ -3,10 +3,22 @@ import os
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'ms_ladies_shoes_sec_key_2026_987654321_x9f8e7d6c5b4a3')
-    DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.abspath(os.path.dirname(__file__)), 'shop.db'))
-
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'static', 'uploads'))
+    IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+
+    if IS_VERCEL:
+        DB_PATH = os.environ.get('DB_PATH', '/tmp/shop.db')
+        bundled_db = os.path.join(BASE_DIR, 'shop.db')
+        if not os.path.exists(DB_PATH) and os.path.exists(bundled_db):
+            try:
+                import shutil
+                shutil.copy2(bundled_db, DB_PATH)
+            except Exception:
+                pass
+        UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/tmp/uploads')
+    else:
+        DB_PATH = os.environ.get('DB_PATH', os.path.join(BASE_DIR, 'shop.db'))
+        UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'static', 'uploads'))
     MAX_CONTENT_LENGTH = 35 * 1024 * 1024  # 35 MB (video)
     ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'webp'}
     ALLOWED_VIDEOS = {'mp4', 'webm'}

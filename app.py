@@ -9,17 +9,31 @@ import db
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Ensure upload folders exist
-os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'images'), exist_ok=True)
-os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'videos'), exist_ok=True)
+# Ensure upload folders exist safely
+try:
+    os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'videos'), exist_ok=True)
+except Exception:
+    pass
 
 # Ensure database tables exist and default admin is seeded if empty
-db.init_db()
 try:
+    db.init_db()
     if db.count_admins() == 0:
         db.upsert_admin('Mehedi', generate_password_hash('Mehedi%123'))
 except Exception:
     pass
+
+# Custom upload serving route to seamlessly support serverless /tmp and project static uploads
+from flask import send_from_directory
+
+@app.route('/static/uploads/<path:filename>')
+def serve_uploads(filename):
+    custom_dir = Config.UPLOAD_FOLDER
+    if os.path.isfile(os.path.join(custom_dir, filename)):
+        return send_from_directory(custom_dir, filename)
+    bundled_dir = os.path.join(Config.BASE_DIR, 'static', 'uploads')
+    return send_from_directory(bundled_dir, filename)
 
 app.register_blueprint(main_bp)
 

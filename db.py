@@ -205,8 +205,17 @@ EVENT_STAGES = ('payment_submitted', 'payment_approved', 'payment_rejected',
 def get_connection():
     conn = sqlite3.connect(Config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES, timeout=15)
     conn.row_factory = lambda cur, row: {d[0]: row[i] for i, d in enumerate(cur.description)}
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
+    try:
+        conn.execute("PRAGMA foreign_keys = ON")
+    except Exception:
+        pass
+    try:
+        if getattr(Config, 'IS_VERCEL', False):
+            conn.execute("PRAGMA journal_mode = DELETE")
+        else:
+            conn.execute("PRAGMA journal_mode = WAL")
+    except Exception:
+        pass
     return conn
 
 
