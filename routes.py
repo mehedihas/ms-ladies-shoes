@@ -106,6 +106,50 @@ def too_many(bucket, limit, window):
     return len(hits) > limit
 
 
+def optimize_image_to_target_kb(stream, target_kb=100, max_dimension=1000):
+    """
+    Compresses any uploaded image (even 1MB - 10MB+) down to <= target_kb (default 100 KB)
+    while preserving high visual clarity and correct orientation.
+    """
+    img = ImageOps.exif_transpose(Image.open(stream))
+    if img.mode in ('RGBA', 'LA', 'P'):
+        img = img.convert('RGBA')
+        bg = Image.new('RGB', img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[-1])
+        img = bg
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    # Initial resize if larger than max_dimension
+    if max(img.size) > max_dimension:
+        img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+    target_bytes = target_kb * 1024
+    best_data = None
+
+    # Step down quality until file size is under target_kb
+    for q in [85, 78, 72, 65, 58, 50, 42, 35]:
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=q, optimize=True, progressive=True)
+        best_data = buf.getvalue()
+        if len(best_data) <= target_bytes:
+            return best_data
+
+    # If still > target_bytes, gradually step down resolution
+    for scale in [0.85, 0.70, 0.55]:
+        w, h = int(img.size[0] * scale), int(img.size[1] * scale)
+        if w < 200 or h < 200:
+            break
+        scaled = img.resize((w, h), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        scaled.save(buf, format='JPEG', quality=65, optimize=True, progressive=True)
+        best_data = buf.getvalue()
+        if len(best_data) <= target_bytes:
+            break
+
+    return best_data
+
+
 def save_upload(file, kind):
     """kind = 'images' | 'videos'. Returns 'uploads/<kind>/<name>' or None."""
     if not file or not file.filename:
@@ -117,17 +161,10 @@ def save_upload(file, kind):
     os.makedirs(folder, exist_ok=True)
     if kind == 'images' and Image:
         try:
-            img = ImageOps.exif_transpose(Image.open(file.stream))
-            if img.mode in ('RGBA', 'LA', 'P'):
-                img = img.convert('RGBA')
-                bg = Image.new('RGB', img.size, (255, 255, 255))
-                bg.paste(img, mask=img.split()[-1])
-                img = bg
-            else:
-                img = img.convert('RGB')
-            img.thumbnail((1200, 1200))
+            compressed_bytes = optimize_image_to_target_kb(file.stream, target_kb=100)
             name = uuid.uuid4().hex[:16] + '.jpg'
-            img.save(os.path.join(folder, name), 'JPEG', quality=84, optimize=True, progressive=True)
+            with open(os.path.join(folder, name), 'wb') as out_f:
+                out_f.write(compressed_bytes)
             return "uploads/%s/%s" % (kind, name)
         except Exception:
             try:
