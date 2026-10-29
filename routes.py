@@ -855,7 +855,20 @@ def submit_feedback():
     return redirect(url_for('main.track_order', tracking_hash=h))
 
 
-# =============================================================================== admin: auth
+# =============================================================================== admin: auth & localhost protection
+@main_bp.before_request
+def restrict_admin_access():
+    """Restricts all /admin routes so that admin management is strictly local (localhost only)."""
+    if request.path.startswith('/admin'):
+        host_no_port = request.host.split(':')[0].lower()
+        is_local = host_no_port in ('localhost', '127.0.0.1', '0.0.0.0')
+        if Config.IS_VERCEL or not is_local:
+            emergency_key = os.environ.get('ADMIN_REMOTE_KEY')
+            if emergency_key and request.args.get('key') == emergency_key:
+                return None
+            return render_template('404.html', msg="Admin portal is restricted to local server maintenance. Please manage your shop via http://localhost:3570/admin/login"), 404
+
+
 @main_bp.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
