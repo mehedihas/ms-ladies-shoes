@@ -128,11 +128,14 @@ def save_upload(file, kind):
             img.thumbnail((1200, 1200))
             name = uuid.uuid4().hex[:16] + '.jpg'
             img.save(os.path.join(folder, name), 'JPEG', quality=84, optimize=True, progressive=True)
+            return "uploads/%s/%s" % (kind, name)
         except Exception:
-            return None
-    else:
-        name = "%s_%s" % (uuid.uuid4().hex[:12], secure_filename(file.filename))
-        file.save(os.path.join(folder, name))
+            try:
+                file.stream.seek(0)
+            except Exception:
+                pass
+    name = "%s_%s" % (uuid.uuid4().hex[:12], secure_filename(file.filename or 'upload.jpg'))
+    file.save(os.path.join(folder, name))
     return "uploads/%s/%s" % (kind, name)
 
 

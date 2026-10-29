@@ -4,7 +4,7 @@ import os
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'ms_ladies_shoes_sec_key_2026_987654321_x9f8e7d6c5b4a3')
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+    IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or os.environ.get('VERCEL_REGION') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or os.environ.get('LAMBDA_TASK_ROOT'))
 
     if IS_VERCEL:
         DB_PATH = os.environ.get('DB_PATH', '/tmp/shop.db')
@@ -20,7 +20,7 @@ class Config:
         DB_PATH = os.environ.get('DB_PATH', os.path.join(BASE_DIR, 'shop.db'))
         UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'static', 'uploads'))
     MAX_CONTENT_LENGTH = 35 * 1024 * 1024  # 35 MB (video)
-    ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'webp'}
+    ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'webp', 'jfif', 'bmp', 'avif', 'gif'}
     ALLOWED_VIDEOS = {'mp4', 'webm'}
 
     # Public site URL used in tracking links sent to customers
