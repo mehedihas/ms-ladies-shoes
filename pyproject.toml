@@ -1,0 +1,14 @@
+[project]
+name = "app"
+version = "0.1.0"
+requires-python = ">=3.12"
+classifiers = [
+  "Private :: Do Not Upload",
+]
+dependencies = [
+    "flask>=3.0",
+    "gunicorn>=21.2.0",
+    "pillow>=10.0.0",
+    "requests>=2.31.0",
+    "werkzeug>=1.0.1",
+]

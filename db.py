@@ -203,6 +203,14 @@ EVENT_STAGES = ('payment_submitted', 'payment_approved', 'payment_rejected',
 
 # --------------------------------------------------------------------------- plumbing
 def get_connection():
+    if getattr(Config, 'IS_VERCEL', False):
+        try:
+            bundled = os.path.join(Config.BASE_DIR, 'shop.db')
+            if (not os.path.exists(Config.DB_PATH) or os.path.getsize(Config.DB_PATH) == 0) and os.path.exists(bundled):
+                import shutil
+                shutil.copy2(bundled, Config.DB_PATH)
+        except Exception:
+            pass
     conn = sqlite3.connect(Config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES, timeout=15)
     conn.row_factory = lambda cur, row: {d[0]: row[i] for i, d in enumerate(cur.description)}
     try:
