@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var slides = Array.from(track.children);
     var n = slides.length;
     var i = 0;
-    var dots = s.querySelector('.dots');
+    var dots = s.querySelector('.dots') || (s.parentElement ? s.parentElement.querySelector('.dots') : null);
     var prevBtn = s.querySelector('.nav-arrow.prev');
     var nextBtn = s.querySelector('.nav-arrow.next');
     var timer = null;
@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Create dots if container exists
     if (dots && n > 1) {
       dots.innerHTML = '';
+      if (dots.parentElement && dots.parentElement.classList.contains('slider-dots-wrap')) {
+        dots.parentElement.style.display = '';
+      }
+      dots.style.display = '';
       for (var k = 0; k < n; k++) {
         (function (index) {
           var dot = document.createElement('i');
@@ -29,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     } else if (dots && n <= 1) {
       dots.style.display = 'none';
+      if (dots.parentElement && dots.parentElement.classList.contains('slider-dots-wrap')) {
+        dots.parentElement.style.display = 'none';
+      }
     }
 
     function show(x) {
