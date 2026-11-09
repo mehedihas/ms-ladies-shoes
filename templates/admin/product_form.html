@@ -115,10 +115,10 @@
     </div>
   </div>
 
-  <!-- 5. Media Uploads (3 Images + 1 Video) -->
+  <!-- 5. Media Uploads (3 Images) -->
   <div class="form-card">
     <div class="form-card-title">
-      <span>🖼️ Media Uploads (3 Images & 1 Video)</span>
+      <span>🖼️ Product Images (Up to 3 Images)</span>
     </div>
     <p class="help-text" style="margin-bottom: 16px;">
       Images are automatically optimized and scaled for fast mobile loading. First image will be used on product cards.
@@ -181,35 +181,6 @@
           {% endif %}
           <label class="btn-upload-trigger" for="file_image_3">📁 {{ 'Replace Image 3' if img3 else 'Choose Image 3' }}</label>
           <input type="file" id="file_image_3" name="image_3" accept="image/*" class="file-input-hidden" onchange="previewFile(this, 'prev_image_3')">
-        </div>
-      </div>
-
-      <!-- Video Upload -->
-      <div class="upload-card">
-        <div>
-          <div class="upload-label">
-            Product Video <span class="badge-opt">Optional</span>
-          </div>
-          {% set vid = p.video_url if p else None %}
-          <div style="height:120px; background:#0F172A; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px; margin-bottom:10px;">
-            🎬
-          </div>
-          {% if vid %}
-          <div class="help-text" style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;">
-            Current: {{ vid }}
-          </div>
-          {% endif %}
-        </div>
-        <div>
-          {% if vid %}
-          <div style="margin-bottom: 6px; font-size: 12px; color: var(--admin-muted);">
-            <label style="display:inline; font-weight:normal; cursor:pointer;">
-              <input type="checkbox" name="remove_video" value="1"> Delete video
-            </label>
-          </div>
-          {% endif %}
-          <label class="btn-upload-trigger" for="file_video">🎥 {{ 'Replace Video' if vid else 'Choose Video' }}</label>
-          <input type="file" id="file_video" name="video" accept="video/mp4,video/webm" class="file-input-hidden">
         </div>
       </div>
     </div>

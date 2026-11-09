@@ -20,11 +20,6 @@
         <img src="{{ url_for('static', filename=p.image_3) }}" alt="Thumb 3">
       </div>
       {% endif %}
-      {% if p.video_url %}
-      <div class="slider-thumb-item video-thumb" onclick="var s = this.closest('.product-gallery-wrap').querySelector('.slider'); if(s) { var idx = {{ (1 if p.image_2 else 0) + (1 if p.image_3 else 0) + 1 }}; s.dispatchEvent(new CustomEvent('jump', {detail:idx})); }">
-        <span>▶ Video</span>
-      </div>
-      {% endif %}
     </div>
   </div>
   <div>

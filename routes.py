@@ -1172,10 +1172,7 @@ def admin_product_form(pid=None):
             data[key] = p[key]
         else:
             data[key] = None
-    up_video = save_upload(request.files.get('video'), 'videos')
-    if up_video:
-        new_files.append(up_video)
-    data['video_url'] = up_video or (p['video_url'] if p and not f.get('remove_video') else None)
+    data['video_url'] = None
     if not data['image_1']:
         for n in new_files:
             remove_upload(n)
