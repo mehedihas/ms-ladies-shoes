@@ -45,4 +45,20 @@ class Config:
     DIVISIONS = ['Dhaka', 'Chattogram', 'Rajshahi', 'Khulna', 'Barishal',
                  'Sylhet', 'Rangpur', 'Mymensingh']
 
+    # SMTP Order Notification Email Configuration (Gmail)
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
+    SMTP_USER = os.environ.get('SMTP_USER', 'msshoescol@gmail.com')
+    SMTP_PASS = os.environ.get('SMTP_PASS', 'dgixyujdnocoxxgl')
+    SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', '1') == '1'
+    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', '0') == '1'
+    SMTP_SENDER_NAME = os.environ.get('SMTP_SENDER_NAME', 'MS Ladies Shoes Collection')
+    ORDER_NOTIFY_EMAILS = [
+        e.strip() for e in os.environ.get(
+            'ORDER_NOTIFY_EMAILS',
+            'mehedi6674@gmail.com,siratunm@gmail.com'
+        ).split(',') if e.strip()
+    ]
+
+
 

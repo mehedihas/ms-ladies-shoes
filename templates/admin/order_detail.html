@@ -4,6 +4,9 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
   <a href="{{ url_for('main.admin_dashboard') }}" class="btn gray sm" style="text-decoration:none;">&larr; Back to Smart Dashboard</a>
   <div style="display:flex; gap:8px;">
+    <form action="{{ url_for('main.admin_order_email_notify', order_id=o.id) }}" method="POST" style="margin:0; display:inline;">
+      <button type="submit" class="btn sm gray" title="Send email notification with order details to owners">📧 Resend Email Alert</button>
+    </form>
     <a href="{{ url_for('main.admin_order_print', order_id=o.id) }}" target="_blank" class="btn sm navy" style="text-decoration:none;">🖨️ Print Invoice</a>
     <a href="{{ link }}" target="_blank" class="btn sm orange" style="text-decoration:none;">📍 Live Customer View</a>
   </div>

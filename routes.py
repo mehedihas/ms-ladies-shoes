@@ -24,6 +24,7 @@ from werkzeug.utils import secure_filename
 
 import db
 from config import Config
+import mailer
 
 try:  # Pillow is optional: it shrinks big phone photos so the shop loads fast on mobile data
     from PIL import Image, ImageOps
@@ -764,6 +765,10 @@ def create_order():
         try:
             new_oid = db.create_order(data)
             notify_order_sms(new_oid, 'created')
+            try:
+                mailer.notify_new_order(new_oid, async_send=True)
+            except Exception:
+                pass
             break
         except sqlite3.IntegrityError:
             continue
@@ -1542,6 +1547,27 @@ def admin_order_sms_test(order_id):
         flash("Test SMS sent successfully to %s via Android Airtel SIM Gateway!" % phone, "success")
     else:
         flash("SMS Gateway response: %s" % res.get('error', 'Failed to send SMS'), "error")
+    return redirect(url_for('main.admin_order', order_id=order_id))
+
+
+@main_bp.route('/admin/order/<int:order_id>/email_notify', methods=['POST'])
+@login_required
+def admin_order_email_notify(order_id):
+    order = db.get_order(order_id)
+    if not order:
+        flash("Order not found.", "error")
+        return redirect(url_for('main.admin_dashboard'))
+
+    try:
+        cfg = mailer._get_smtp_config()
+        sent = mailer.notify_new_order(order, async_send=False)
+        if sent:
+            flash("Order #%d notification email sent to %s!" % (order_id, ', '.join(cfg['recipients'])), "success")
+        else:
+            flash("Could not send email. Please check your SMTP settings.", "error")
+    except Exception as ex:
+        flash("SMTP Error: %s" % ex, "error")
+
     return redirect(url_for('main.admin_order', order_id=order_id))
 
 
