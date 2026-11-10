@@ -1,9 +1,19 @@
 import os
+from datetime import timedelta
 
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'ms_ladies_shoes_sec_key_2026_987654321_x9f8e7d6c5b4a3')
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+    # Session persistence & isolation (prevents cookie collisions with other localhost/127.0.0.1 apps)
+    SESSION_COOKIE_NAME = 'ms_shoes_session'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
+    SESSION_REFRESH_EACH_REQUEST = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+
     IS_VERCEL = bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV') or os.environ.get('VERCEL_REGION') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or os.environ.get('LAMBDA_TASK_ROOT'))
 
     if IS_VERCEL:

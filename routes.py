@@ -189,6 +189,7 @@ def login_required(fn):
     @wraps(fn)
     def wrapper(*a, **kw):
         if not session.get('admin'):
+            flash("Your session expired. Please log in to continue.", "info")
             return redirect(url_for('main.admin_login', next=request.path))
         return fn(*a, **kw)
     return wrapper
